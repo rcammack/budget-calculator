@@ -1,16 +1,30 @@
-# React + Vite
+# Home Affordability Calculator
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Progressive Web App (PWA) for estimating home affordability in Honolulu, HI using the 28/36 DTI rule.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Primary and optional partner income (salary + passive income with monthly/annual toggle)
+- Credit score range impact on affordability
+- Honolulu-specific defaults (property tax, HOA, insurance, cost-of-living adjustment)
+- Down payment scenarios (3.5%, 5%, 10%, 20%)
+- Side-by-side solo vs combined income results
+- Input persistence with localStorage
+- Installable PWA with offline support
 
-## React Compiler
+## Run locally
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```bash
+npm install
+npm run dev
+```
 
-## Expanding the ESLint configuration
+## Build
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+```bash
+npm run build
+```
+
+## Deploy
+
+The app is configured for GitHub Pages with base path `/budget-calculator/`.
