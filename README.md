@@ -27,4 +27,4 @@ npm run build
 
 ## Deploy
 
-The app is configured for GitHub Pages with base path `/budget-calculator/`.
+The app is configured for GitHub Pages at [https://rcammack.github.io/budget-calculator/](https://rcammack.github.io/budget-calculator/) with base path `/budget-calculator/`.
