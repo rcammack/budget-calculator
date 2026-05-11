@@ -28,3 +28,5 @@ npm run build
 ## Deploy
 
 The app is configured for GitHub Pages at [https://rcammack.github.io/budget-calculator/](https://rcammack.github.io/budget-calculator/) with base path `/budget-calculator/`.
+
+Deployments are triggered automatically on every push to `main` via GitHub Actions. If the page appears blank after a new deployment, do a hard refresh (`Cmd+Shift+R` on Mac, `Ctrl+Shift+R` on Windows/Linux) to bypass the browser cache.
