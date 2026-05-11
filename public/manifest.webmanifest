@@ -1,7 +1,7 @@
 {
   "name": "Home Affordability Calculator",
-  "short_name": "Home Afford",
-  "description": "A Honolulu-focused affordability calculator for solo or combined income scenarios.",
+  "short_name": "Home Calculator",
+  "description": "A personal affordability calculator for solo or combined income scenarios",
   "start_url": ".",
   "display": "standalone",
   "background_color": "#f1f5f9",
