@@ -253,9 +253,20 @@ function App() {
     }
   })
 
+  const [theme, setTheme] = useState(() => {
+    const saved = localStorage.getItem('theme') || 'light'
+    document.documentElement.setAttribute('data-theme', saved)
+    return saved
+  })
+
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(inputs))
   }, [inputs])
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme)
+    localStorage.setItem('theme', theme)
+  }, [theme])
 
   const update = (field) => (value) => {
     setInputs((previous) => ({
@@ -288,7 +299,21 @@ function App() {
   return (
     <main className="app-shell">
       <header className="app-header">
-        <p className="eyebrow">Honolulu, HI</p>
+        <div className="app-header-top">
+          <p className="eyebrow">Honolulu, HI</p>
+          <div className="theme-switcher" role="group" aria-label="Color theme">
+            {[['light', 'Blueprint'], ['dark', 'Cyber'], ['hc', 'HC']].map(([t, label]) => (
+              <button
+                key={t}
+                className={`theme-btn${theme === t ? ' active' : ''}`}
+                onClick={() => setTheme(t)}
+                aria-pressed={theme === t}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
         <h1>Home Affordability Calculator</h1>
         <p>
           Estimates use the 28/36 rule with Honolulu defaults for property tax ({percent.format(

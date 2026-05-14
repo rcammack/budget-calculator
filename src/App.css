@@ -2,6 +2,7 @@
   box-sizing: border-box;
 }
 
+/* ── Shell ─────────────────────────────────────────────────────── */
 .app-shell {
   max-width: 980px;
   margin: 0 auto;
@@ -10,11 +11,28 @@
   gap: 1rem;
 }
 
+/* ── Header ────────────────────────────────────────────────────── */
 .app-header {
-  background: #0f172a;
-  color: #f8fafc;
-  border-radius: 1rem;
+  background: var(--bg-header);
+  color: var(--text-header);
+  border-radius: var(--radius-panel);
   padding: 1.25rem;
+  clip-path: var(--header-clip);
+  position: relative;
+}
+
+/* Cyberpunk: neon accent bar on left edge */
+[data-theme='dark'] .app-header {
+  border-left: 3px solid #ff2d78;
+  box-shadow: 0 0 24px rgba(255, 45, 120, 0.2);
+}
+
+.app-header-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
 }
 
 .app-header h1 {
@@ -22,32 +40,77 @@
   font-size: clamp(1.5rem, 4vw, 2.1rem);
 }
 
-.app-header p {
+.app-header > p,
+.app-header-body > p {
   margin: 0;
   line-height: 1.4;
-  color: #dbeafe;
+  color: var(--text-header);
+  opacity: 0.85;
 }
 
 .eyebrow {
   text-transform: uppercase;
   letter-spacing: 0.08em;
   font-size: 0.78rem;
-  color: #93c5fd;
+  color: var(--text-eyebrow);
+  margin: 0;
 }
 
+/* ── Theme switcher ────────────────────────────────────────────── */
+.theme-switcher {
+  display: flex;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.theme-btn {
+  background: transparent;
+  color: var(--tbtn-color);
+  border: 1px solid var(--tbtn-border);
+  border-radius: var(--radius-input);
+  padding: 0.3rem 0.65rem;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s, border-color 0.15s, box-shadow 0.15s;
+}
+
+.theme-btn:hover {
+  color: var(--tbtn-active-color);
+  border-color: var(--tbtn-active-border);
+}
+
+.theme-btn.active {
+  background: var(--tbtn-active-bg);
+  color: var(--tbtn-active-color);
+  border-color: var(--tbtn-active-border);
+  box-shadow: var(--tbtn-active-shadow);
+}
+
+/* ── Panels ────────────────────────────────────────────────────── */
 .panel {
-  border: 1px solid #dbe5f1;
-  border-radius: 1rem;
-  background: #fff;
+  border: var(--border-width-panel) solid var(--border-panel);
+  border-radius: var(--radius-panel);
+  background: var(--bg-panel);
   padding: 1rem;
+  box-shadow: var(--panel-shadow);
 }
 
 .panel h2 {
   margin-top: 0;
   font-size: 1.2rem;
-  color: #0f172a;
+  color: var(--text-label);
 }
 
+/* Cyberpunk: pink accent on h2 */
+[data-theme='dark'] .panel h2 {
+  border-bottom: 1px solid rgba(255, 45, 120, 0.35);
+  padding-bottom: 0.4rem;
+}
+
+/* ── Grid ──────────────────────────────────────────────────────── */
 .grid {
   display: grid;
   gap: 0.75rem;
@@ -58,6 +121,7 @@
   grid-template-columns: 1fr;
 }
 
+/* ── Form fields ───────────────────────────────────────────────── */
 .field,
 .field-group {
   display: grid;
@@ -67,55 +131,63 @@
 .field span {
   font-size: 0.85rem;
   font-weight: 600;
-  color: #334155;
+  color: var(--text-label);
 }
 
 input,
 select {
   width: 100%;
-  border: 1px solid #cbd5e1;
-  border-radius: 0.65rem;
+  border: var(--border-width-input) solid var(--border-input);
+  border-radius: var(--radius-input);
   padding: 0.62rem 0.72rem;
   font: inherit;
-  background: #fff;
-  color: #0f172a;
+  background: var(--bg-input);
+  color: var(--text-primary);
 }
 
 input:focus,
 select:focus {
-  outline: 2px solid #2563eb;
+  outline: 2px solid var(--focus-ring);
   outline-offset: 1px;
-  border-color: #2563eb;
+  border-color: var(--focus-ring);
+}
+
+[data-theme='dark'] input:focus,
+[data-theme='dark'] select:focus {
+  box-shadow: 0 0 8px rgba(255, 45, 120, 0.45);
 }
 
 .field small {
   font-size: 0.75rem;
-  color: #64748b;
+  color: var(--text-hint);
 }
 
 .field-group {
   align-items: end;
 }
 
+/* ── Toggle ────────────────────────────────────────────────────── */
 .toggle {
   margin-top: 0.75rem;
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
   font-weight: 600;
-  color: #0f172a;
+  color: var(--text-label);
 }
 
 .toggle input {
   width: auto;
 }
 
+/* ── Partner grid ──────────────────────────────────────────────── */
 .partner-grid {
   margin-top: 0.75rem;
-  border-top: 1px dashed #cbd5e1;
+  border-top: 1px dashed var(--border-partner);
   padding-top: 0.75rem;
 }
 
+/* ── Results ───────────────────────────────────────────────────── */
 .results-grid {
   display: grid;
   gap: 1rem;
@@ -123,29 +195,37 @@ select:focus {
 }
 
 .result-card {
-  border: 1px solid #dbe5f1;
-  border-radius: 1rem;
-  background: #fff;
+  border: var(--border-width-panel) solid var(--border-panel);
+  border-radius: var(--radius-panel);
+  background: var(--bg-panel);
   padding: 1rem;
   display: grid;
   gap: 0.65rem;
+  box-shadow: var(--panel-shadow);
+}
+
+/* Cyberpunk: alternate neon color on result cards */
+[data-theme='dark'] .result-card {
+  border-color: #ff2d78;
+  box-shadow: 0 0 14px rgba(255, 45, 120, 0.18), inset 0 0 40px rgba(0, 0, 25, 0.6);
 }
 
 .result-card header h3 {
   margin: 0;
   font-size: 1.1rem;
-  color: #0f172a;
+  color: var(--text-label);
 }
 
 .result-card p {
   margin: 0;
-  color: #334155;
+  color: var(--text-td);
 }
 
 .summary-line {
-  color: #0f172a;
+  color: var(--text-td);
 }
 
+/* ── Table ─────────────────────────────────────────────────────── */
 .table-wrap {
   overflow-x: auto;
 }
@@ -160,24 +240,30 @@ th,
 td {
   text-align: left;
   padding: 0.45rem;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--border-td);
   font-size: 0.85rem;
 }
 
 th {
-  color: #334155;
-  background: #f8fafc;
+  color: var(--text-th);
+  background: var(--bg-th);
+}
+
+td {
+  color: var(--text-td);
 }
 
 tr.recommended td {
-  background: #eff6ff;
+  background: var(--bg-recommended);
+  color: var(--text-recommended);
   font-weight: 600;
 }
 
 strong {
-  color: #0f172a;
+  color: var(--text-strong);
 }
 
+/* ── Responsive ────────────────────────────────────────────────── */
 @media (min-width: 700px) {
   .two-col {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -191,3 +277,4 @@ strong {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+

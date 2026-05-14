@@ -1,7 +1,157 @@
+/* ── Blueprint (light) ─────────────────────────────────────────── */
 :root {
-  font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  color: #1e293b;
-  background: #f1f5f9;
+  --font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+  --bg-body: #cde3f5;
+  --bg-panel: #f0f7ff;
+  --bg-header: #1a3560;
+  --bg-input: #ffffff;
+  --bg-th: #dbeafe;
+  --bg-recommended: #bfdbfe;
+
+  --border-panel: #1a3560;
+  --border-input: #7fafd8;
+  --border-td: #c5d9ee;
+  --border-partner: #7fafd8;
+
+  --text-primary: #07111f;
+  --text-header: #e8f4ff;
+  --text-eyebrow: #93c5fd;
+  --text-label: #1a3560;
+  --text-hint: #4a6a90;
+  --text-th: #1a3560;
+  --text-td: #07111f;
+  --text-strong: #07111f;
+  --text-recommended: var(--text-td);
+
+  --focus-ring: #1565c0;
+
+  --radius-panel: 1rem;
+  --radius-input: 0.65rem;
+  --border-width-panel: 1px;
+  --border-width-input: 1px;
+  --panel-shadow: none;
+  --header-clip: none;
+
+  /* Graph-paper texture: major grid every 80px, minor every 16px */
+  --bg-pattern:
+    linear-gradient(rgba(26, 53, 96, 0.13) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(26, 53, 96, 0.13) 1px, transparent 1px),
+    linear-gradient(rgba(26, 53, 96, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(26, 53, 96, 0.05) 1px, transparent 1px);
+  --bg-pattern-size: 80px 80px, 80px 80px, 16px 16px, 16px 16px;
+
+  /* Theme switcher button colours (rendered inside the header) */
+  --tbtn-color: rgba(232, 244, 255, 0.75);
+  --tbtn-border: rgba(232, 244, 255, 0.3);
+  --tbtn-active-bg: rgba(255, 255, 255, 0.18);
+  --tbtn-active-color: #ffffff;
+  --tbtn-active-border: rgba(255, 255, 255, 0.7);
+  --tbtn-active-shadow: none;
+}
+
+/* ── Cyberpunk (dark) ──────────────────────────────────────────── */
+[data-theme='dark'] {
+  --font-family: 'Courier New', 'Lucida Console', monospace;
+
+  --bg-body: #000000;
+  --bg-panel: #07071a;
+  --bg-header: #000000;
+  --bg-input: #05050f;
+  --bg-th: #0a0a20;
+  --bg-recommended: #091420;
+
+  --border-panel: #00f0ff;
+  --border-input: #ff2d78;
+  --border-td: #1a1a40;
+  --border-partner: #ff2d78;
+
+  --text-primary: #ccd4ff;
+  --text-header: #ffffff;
+  --text-eyebrow: #ff2d78;
+  --text-label: #00f0ff;
+  --text-hint: #5566aa;
+  --text-th: #00f0ff;
+  --text-td: #ccd4ff;
+  --text-strong: #ffffff;
+  --text-recommended: var(--text-td);
+
+  --focus-ring: #ff2d78;
+
+  --radius-panel: 0px;
+  --radius-input: 0px;
+  --border-width-panel: 1px;
+  --border-width-input: 1px;
+  --panel-shadow: 0 0 14px rgba(0, 240, 255, 0.18), inset 0 0 40px rgba(0, 0, 25, 0.6);
+  --header-clip: polygon(0 0, 100% 0, 100% calc(100% - 16px), calc(100% - 16px) 100%, 0 100%);
+
+  /* Neon grid */
+  --bg-pattern:
+    linear-gradient(rgba(0, 240, 255, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 240, 255, 0.07) 1px, transparent 1px);
+  --bg-pattern-size: 50px 50px, 50px 50px;
+
+  --tbtn-color: rgba(204, 212, 255, 0.6);
+  --tbtn-border: rgba(0, 240, 255, 0.25);
+  --tbtn-active-bg: rgba(0, 240, 255, 0.08);
+  --tbtn-active-color: #00f0ff;
+  --tbtn-active-border: #00f0ff;
+  --tbtn-active-shadow: 0 0 8px rgba(0, 240, 255, 0.55);
+}
+
+/* ── High Contrast ─────────────────────────────────────────────── */
+[data-theme='hc'] {
+  --font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+  --bg-body: #ffffff;
+  --bg-panel: #ffffff;
+  --bg-header: #000000;
+  --bg-input: #ffffff;
+  --bg-th: #000000;
+  --bg-recommended: #000000;
+
+  --border-panel: #000000;
+  --border-input: #000000;
+  --border-td: #000000;
+  --border-partner: #000000;
+
+  --text-primary: #000000;
+  --text-header: #ffffff;
+  --text-eyebrow: #ffffff;
+  --text-label: #000000;
+  --text-hint: #000000;
+  --text-th: #ffffff;
+  --text-td: #000000;
+  --text-strong: #000000;
+  --text-recommended: #ffffff;
+
+  --focus-ring: #000000;
+
+  --radius-panel: 0px;
+  --radius-input: 0px;
+  --border-width-panel: 2px;
+  --border-width-input: 2px;
+  --panel-shadow: none;
+  --header-clip: none;
+
+  --bg-pattern: none;
+  --bg-pattern-size: auto;
+
+  --tbtn-color: rgba(255, 255, 255, 0.75);
+  --tbtn-border: rgba(255, 255, 255, 0.4);
+  --tbtn-active-bg: #ffffff;
+  --tbtn-active-color: #000000;
+  --tbtn-active-border: #ffffff;
+  --tbtn-active-shadow: none;
+}
+
+/* ── Base styles ───────────────────────────────────────────────── */
+html {
+  font-family: var(--font-family);
+  color: var(--text-primary);
+  background-color: var(--bg-body);
+  background-image: var(--bg-pattern);
+  background-size: var(--bg-pattern-size);
   line-height: 1.5;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
