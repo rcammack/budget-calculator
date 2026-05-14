@@ -21,10 +21,10 @@
   position: relative;
 }
 
-/* Cyberpunk: neon accent bar on left edge */
+/* Retro neon: warm pink accent bar on header */
 [data-theme='dark'] .app-header {
-  border-left: 3px solid #ff2d78;
-  box-shadow: 0 0 24px rgba(255, 45, 120, 0.2);
+  border-left: 3px solid #ffe44d;
+  box-shadow: 0 0 24px rgba(255, 61, 181, 0.25);
 }
 
 .app-header-top {
@@ -57,16 +57,10 @@
 }
 
 /* ── Theme switcher ────────────────────────────────────────────── */
-.theme-switcher {
-  display: flex;
-  gap: 0.35rem;
-  flex-shrink: 0;
-}
-
-.theme-btn {
-  background: transparent;
-  color: var(--tbtn-color);
-  border: 1px solid var(--tbtn-border);
+.theme-switcher select {
+  background: var(--tbtn-active-bg);
+  color: var(--tbtn-active-color);
+  border: 1px solid var(--tbtn-active-border);
   border-radius: var(--radius-input);
   padding: 0.3rem 0.65rem;
   font: inherit;
@@ -74,19 +68,7 @@
   font-weight: 600;
   letter-spacing: 0.04em;
   cursor: pointer;
-  transition: color 0.15s, background 0.15s, border-color 0.15s, box-shadow 0.15s;
-}
-
-.theme-btn:hover {
-  color: var(--tbtn-active-color);
-  border-color: var(--tbtn-active-border);
-}
-
-.theme-btn.active {
-  background: var(--tbtn-active-bg);
-  color: var(--tbtn-active-color);
-  border-color: var(--tbtn-active-border);
-  box-shadow: var(--tbtn-active-shadow);
+  width: auto;
 }
 
 /* ── Panels ────────────────────────────────────────────────────── */
@@ -104,9 +86,9 @@
   color: var(--text-label);
 }
 
-/* Cyberpunk: pink accent on h2 */
+/* Retro neon: teal accent on h2 */
 [data-theme='dark'] .panel h2 {
-  border-bottom: 1px solid rgba(255, 45, 120, 0.35);
+  border-bottom: 1px solid rgba(0, 229, 204, 0.35);
   padding-bottom: 0.4rem;
 }
 
@@ -154,7 +136,7 @@ select:focus {
 
 [data-theme='dark'] input:focus,
 [data-theme='dark'] select:focus {
-  box-shadow: 0 0 8px rgba(255, 45, 120, 0.45);
+  box-shadow: 0 0 8px rgba(0, 229, 204, 0.5);
 }
 
 .field small {
@@ -204,10 +186,13 @@ select:focus {
   box-shadow: var(--panel-shadow);
 }
 
-/* Cyberpunk: alternate neon color on result cards */
+/* Retro neon: result cards alternate to teal glow */
 [data-theme='dark'] .result-card {
-  border-color: #ff2d78;
-  box-shadow: 0 0 14px rgba(255, 45, 120, 0.18), inset 0 0 40px rgba(0, 0, 25, 0.6);
+  border-color: #00e5cc;
+  box-shadow:
+    0 0 8px rgba(0, 229, 204, 0.35),
+    0 0 24px rgba(0, 229, 204, 0.1),
+    inset 0 0 30px rgba(10, 5, 18, 0.7);
 }
 
 .result-card header h3 {

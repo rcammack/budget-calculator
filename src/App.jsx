@@ -301,18 +301,17 @@ function App() {
       <header className="app-header">
         <div className="app-header-top">
           <p className="eyebrow">Honolulu, HI</p>
-          <div className="theme-switcher" role="group" aria-label="Color theme">
-            {[['light', 'Blueprint'], ['dark', 'Cyber'], ['hc', 'HC']].map(([t, label]) => (
-              <button
-                key={t}
-                className={`theme-btn${theme === t ? ' active' : ''}`}
-                onClick={() => setTheme(t)}
-                aria-pressed={theme === t}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
+          <label className="theme-switcher">
+            <select
+              value={theme}
+              onChange={(e) => setTheme(e.target.value)}
+              aria-label="Color theme"
+            >
+              <option value="light">Light</option>
+              <option value="dark">Dark</option>
+              <option value="hc">High Contrast</option>
+            </select>
+          </label>
         </div>
         <h1>Home Affordability Calculator</h1>
         <p>

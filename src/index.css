@@ -50,53 +50,56 @@
   --tbtn-active-shadow: none;
 }
 
-/* ── Cyberpunk (dark) ──────────────────────────────────────────── */
+/* ── Retro Neon (dark) ─────────────────────────────────────────── */
 [data-theme='dark'] {
   --font-family: 'Courier New', 'Lucida Console', monospace;
 
-  --bg-body: #000000;
-  --bg-panel: #07071a;
-  --bg-header: #000000;
-  --bg-input: #05050f;
-  --bg-th: #0a0a20;
-  --bg-recommended: #091420;
+  --bg-body: #0f0b14;
+  --bg-panel: #18101f;
+  --bg-header: #0a0710;
+  --bg-input: #110d18;
+  --bg-th: #1e1428;
+  --bg-recommended: #1a0e28;
 
-  --border-panel: #00f0ff;
-  --border-input: #ff2d78;
-  --border-td: #1a1a40;
-  --border-partner: #ff2d78;
+  --border-panel: #ff3db5;
+  --border-input: #00e5cc;
+  --border-td: #2a1a38;
+  --border-partner: #00e5cc;
 
-  --text-primary: #ccd4ff;
+  --text-primary: #f0e8ff;
   --text-header: #ffffff;
-  --text-eyebrow: #ff2d78;
-  --text-label: #00f0ff;
-  --text-hint: #5566aa;
-  --text-th: #00f0ff;
-  --text-td: #ccd4ff;
+  --text-eyebrow: #ffe44d;
+  --text-label: #00e5cc;
+  --text-hint: #7a6090;
+  --text-th: #ff3db5;
+  --text-td: #f0e8ff;
   --text-strong: #ffffff;
   --text-recommended: var(--text-td);
 
-  --focus-ring: #ff2d78;
+  --focus-ring: #00e5cc;
 
-  --radius-panel: 0px;
-  --radius-input: 0px;
+  --radius-panel: 0.85rem;
+  --radius-input: 0.5rem;
   --border-width-panel: 1px;
   --border-width-input: 1px;
-  --panel-shadow: 0 0 14px rgba(0, 240, 255, 0.18), inset 0 0 40px rgba(0, 0, 25, 0.6);
-  --header-clip: polygon(0 0, 100% 0, 100% calc(100% - 16px), calc(100% - 16px) 100%, 0 100%);
+  /* Soft bloom glow — like light spilling from a glass neon tube */
+  --panel-shadow:
+    0 0 8px rgba(255, 61, 181, 0.35),
+    0 0 24px rgba(255, 61, 181, 0.12),
+    inset 0 0 30px rgba(10, 5, 18, 0.7);
+  --header-clip: none;
 
-  /* Neon grid */
+  /* Subtle dot-matrix / halftone background for retro texture */
   --bg-pattern:
-    linear-gradient(rgba(0, 240, 255, 0.07) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 240, 255, 0.07) 1px, transparent 1px);
-  --bg-pattern-size: 50px 50px, 50px 50px;
+    radial-gradient(circle, rgba(255, 61, 181, 0.12) 1px, transparent 1px);
+  --bg-pattern-size: 24px 24px;
 
-  --tbtn-color: rgba(204, 212, 255, 0.6);
-  --tbtn-border: rgba(0, 240, 255, 0.25);
-  --tbtn-active-bg: rgba(0, 240, 255, 0.08);
-  --tbtn-active-color: #00f0ff;
-  --tbtn-active-border: #00f0ff;
-  --tbtn-active-shadow: 0 0 8px rgba(0, 240, 255, 0.55);
+  --tbtn-color: rgba(240, 232, 255, 0.55);
+  --tbtn-border: rgba(255, 61, 181, 0.3);
+  --tbtn-active-bg: rgba(255, 61, 181, 0.12);
+  --tbtn-active-color: #ff3db5;
+  --tbtn-active-border: #ff3db5;
+  --tbtn-active-shadow: 0 0 10px rgba(255, 61, 181, 0.6);
 }
 
 /* ── High Contrast ─────────────────────────────────────────────── */
