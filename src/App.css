@@ -166,7 +166,7 @@ select:focus {
 }
 
 .field-group {
-  align-content: start;
+  align-items: start;
 }
 
 /* ── Toggle ────────────────────────────────────────────────────── */
