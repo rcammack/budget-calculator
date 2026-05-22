@@ -1,0 +1,7 @@
+{
+  "mortgageRate": 6.75,
+  "monthlyHoa": 500,
+  "monthlyInsurance": 175,
+  "propertyTaxRate": 0.28,
+  "costOfLivingAdjustment": 10
+}

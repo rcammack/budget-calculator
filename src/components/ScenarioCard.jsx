@@ -8,7 +8,8 @@ const ScenarioCard = ({ title, scenario }) => {
       <header>
         <h3>{title}</h3>
         <p>
-          Gross monthly income: <strong>{currency.format(scenario.grossMonthlyIncome)}</strong>
+          {scenario.isNet ? 'Est. monthly take-home' : 'Gross monthly income'}:{' '}
+          <strong>{currency.format(scenario.isNet ? scenario.effectiveMonthlyIncome : scenario.grossMonthlyIncome)}</strong>
         </p>
       </header>
 

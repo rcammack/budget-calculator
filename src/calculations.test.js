@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { calculateScenario, getAnnualPassive, toNumber } from './calculations'
+import { calculateScenario, getAnnualPassive, getInvestmentAnnualReturn, toNumber } from './calculations'
 import { DEFAULT_INPUTS } from './constants'
+
+const GROSS_INPUTS = { ...DEFAULT_INPUTS, incomeMode: 'gross' }
+const NET_INPUTS   = { ...DEFAULT_INPUTS, incomeMode: 'net', effectiveTaxRate: 30 }
 
 describe('toNumber', () => {
   it('converts a valid string to a number', () => {
@@ -28,36 +31,115 @@ describe('getAnnualPassive', () => {
   })
 })
 
+describe('getInvestmentAnnualReturn', () => {
+  it('returns 0 when all balances are 0', () => {
+    expect(getInvestmentAnnualReturn(DEFAULT_INPUTS, 'primary')).toBe(0)
+  })
+
+  it('calculates standard account return correctly', () => {
+    const inputs = { ...DEFAULT_INPUTS, primaryHysaBalance: 10000, primaryHysaRate: 5 }
+    // $10,000 * 5% = $500
+    expect(getInvestmentAnnualReturn(inputs, 'primary')).toBe(500)
+  })
+
+  it('sums multiple account returns', () => {
+    const inputs = {
+      ...DEFAULT_INPUTS,
+      primaryHysaBalance: 10000, primaryHysaRate: 5,   // $500
+      primaryCdBalance:   20000, primaryCdRate:   4,   // $800
+    }
+    expect(getInvestmentAnnualReturn(inputs, 'primary')).toBe(1300)
+  })
+
+  it('calculates ESPP return using discount, ignoring stock appreciation when rate is 0', () => {
+    // $9,000 contribution at 10% discount → buys $10,000 of stock → gain = $1,000
+    const inputs = { ...DEFAULT_INPUTS, primaryEsppBalance: 9000, primaryEsppRate: 0 }
+    const result = getInvestmentAnnualReturn(inputs, 'primary')
+    expect(result).toBeCloseTo(1000, 0)
+  })
+
+  it('adds stock appreciation on top of ESPP discount gain', () => {
+    // $9,000 contribution → $10,000 shares; 10% stock appreciation = $1,000 extra
+    const inputs = { ...DEFAULT_INPUTS, primaryEsppBalance: 9000, primaryEsppRate: 10 }
+    const result = getInvestmentAnnualReturn(inputs, 'primary')
+    // discount gain $1,000 + appreciation $1,000 = $2,000
+    expect(result).toBeCloseTo(2000, 0)
+  })
+
+  it('uses the correct prefix for partner accounts', () => {
+    const inputs = { ...DEFAULT_INPUTS, partnerHysaBalance: 5000, partnerHysaRate: 4 }
+    expect(getInvestmentAnnualReturn(inputs, 'partner')).toBe(200)
+    expect(getInvestmentAnnualReturn(inputs, 'primary')).toBe(0)
+  })
+})
+
 describe('calculateScenario', () => {
   it('returns a scenario with the correct shape', () => {
-    const scenario = calculateScenario(120000, DEFAULT_INPUTS)
+    const scenario = calculateScenario(120000, GROSS_INPUTS)
     expect(scenario).toHaveProperty('grossMonthlyIncome')
+    expect(scenario).toHaveProperty('effectiveMonthlyIncome')
+    expect(scenario).toHaveProperty('isNet')
     expect(scenario).toHaveProperty('adjustedHousingBudget')
     expect(scenario).toHaveProperty('options')
     expect(scenario).toHaveProperty('recommendedOption')
     expect(scenario.options).toHaveLength(4)
   })
 
-  it('grossMonthlyIncome is annualIncome / 12', () => {
-    const scenario = calculateScenario(120000, DEFAULT_INPUTS)
-    expect(scenario.grossMonthlyIncome).toBe(10000)
+  it('grossMonthlyIncome is always annualIncome / 12 regardless of mode', () => {
+    const gross = calculateScenario(120000, GROSS_INPUTS)
+    const net   = calculateScenario(120000, NET_INPUTS)
+    expect(gross.grossMonthlyIncome).toBe(10000)
+    expect(net.grossMonthlyIncome).toBe(10000)
+  })
+
+  it('effectiveMonthlyIncome equals grossMonthlyIncome in lender mode', () => {
+    const scenario = calculateScenario(120000, GROSS_INPUTS)
+    expect(scenario.isNet).toBe(false)
+    expect(scenario.effectiveMonthlyIncome).toBe(scenario.grossMonthlyIncome)
+  })
+
+  it('effectiveMonthlyIncome is reduced by tax rate in affordability mode', () => {
+    const scenario = calculateScenario(120000, NET_INPUTS)
+    expect(scenario.isNet).toBe(true)
+    // $120,000 * (1 - 0.30) / 12 = $7,000
+    expect(scenario.effectiveMonthlyIncome).toBeCloseTo(7000, 1)
+  })
+
+  it('affordability mode produces a lower housing budget than lender mode', () => {
+    const gross = calculateScenario(120000, GROSS_INPUTS)
+    const net   = calculateScenario(120000, NET_INPUTS)
+    expect(net.adjustedHousingBudget).toBeLessThan(gross.adjustedHousingBudget)
+  })
+
+  it('401k deduction reduces effective take-home in affordability mode', () => {
+    const without401k = calculateScenario(120000, NET_INPUTS, 0)
+    const with401k    = calculateScenario(120000, NET_INPUTS, 23500)
+    expect(with401k.effectiveMonthlyIncome).toBeLessThan(without401k.effectiveMonthlyIncome)
+    expect(with401k.adjustedHousingBudget).toBeLessThan(without401k.adjustedHousingBudget)
+  })
+
+  it('401k deduction has no effect in lender mode', () => {
+    const without401k = calculateScenario(120000, GROSS_INPUTS, 0)
+    const with401k    = calculateScenario(120000, GROSS_INPUTS, 23500)
+    expect(with401k.effectiveMonthlyIncome).toBe(without401k.effectiveMonthlyIncome)
+    expect(with401k.adjustedHousingBudget).toBe(without401k.adjustedHousingBudget)
   })
 
   it('home prices are positive for a reasonable income', () => {
-    const scenario = calculateScenario(120000, DEFAULT_INPUTS)
+    const scenario = calculateScenario(120000, GROSS_INPUTS)
     scenario.options.forEach((option) => {
       expect(option.homePrice).toBeGreaterThan(0)
     })
   })
 
   it('higher income produces a higher max home price', () => {
-    const low = calculateScenario(80000, DEFAULT_INPUTS)
-    const high = calculateScenario(160000, DEFAULT_INPUTS)
+    const low  = calculateScenario(80000,  GROSS_INPUTS)
+    const high = calculateScenario(160000, GROSS_INPUTS)
     expect(high.recommendedOption.homePrice).toBeGreaterThan(low.recommendedOption.homePrice)
   })
 
   it('returns zero home prices when income cannot cover fixed costs', () => {
-    const brokeInputs = { ...DEFAULT_INPUTS, monthlyHoa: 99999, monthlyInsurance: 99999 }
+    const brokeInputs = { ...GROSS_INPUTS, monthlyHoa: 99999, monthlyInsurance: 99999 }
     const scenario = calculateScenario(10000, brokeInputs)
     scenario.options.forEach((option) => {
       expect(option.homePrice).toBe(0)

@@ -1,4 +1,4 @@
-import { CREDIT_SCORE_OPTIONS, DOWN_PAYMENT_OPTIONS } from './constants'
+import { CREDIT_SCORE_OPTIONS, DOWN_PAYMENT_OPTIONS, INVESTMENT_ACCOUNTS, ESPP_DISCOUNT } from './constants'
 
 export const currency = new Intl.NumberFormat('en-US', {
   style: 'currency',
@@ -17,6 +17,20 @@ export const toNumber = (value) => {
 
 export const getAnnualPassive = (amount, frequency) =>
   frequency === 'monthly' ? toNumber(amount) * 12 : toNumber(amount)
+
+export const getInvestmentAnnualReturn = (inputs, prefix) =>
+  INVESTMENT_ACCOUNTS.reduce((total, { key, type }) => {
+    const balance = toNumber(inputs[`${prefix}${key}Balance`])
+    const rate = toNumber(inputs[`${prefix}${key}Rate`])
+    if (type === 'espp') {
+      // contribution buys stock at a discount; gain = discount benefit + stock appreciation on shares received
+      const sharesValue = balance / (1 - ESPP_DISCOUNT)
+      const discountGain = sharesValue - balance
+      const appreciationGain = sharesValue * (rate / 100)
+      return total + discountGain + appreciationGain
+    }
+    return total + balance * (rate / 100)
+  }, 0)
 
 const getMonthlyPrincipalAndInterest = (loanAmount, annualRate) => {
   const principal = toNumber(loanAmount)
@@ -59,18 +73,31 @@ const getMaxHomePrice = ({
   return paymentCapacity / monthlyCostPerDollarHome
 }
 
-export const calculateScenario = (annualIncome, inputs) => {
+export const calculateScenario = (annualIncome, inputs, annualPreTaxDeductions = 0) => {
+  const isNet = inputs.incomeMode === 'net'
+  const taxFactor = isNet ? 1 - Math.min(toNumber(inputs.effectiveTaxRate), 60) / 100 : 1
+  // 401k contributions are pre-tax: subtract after applying tax factor (conservative simplification)
+  const effectiveAnnualIncome = annualIncome * taxFactor - (isNet ? toNumber(annualPreTaxDeductions) : 0)
   const creditBand =
     CREDIT_SCORE_OPTIONS.find((option) => option.value === inputs.creditBand) ||
     CREDIT_SCORE_OPTIONS[4]
 
   const grossMonthlyIncome = annualIncome / 12
-  const frontEndCap = grossMonthlyIncome * 0.28
-  const backEndCap = grossMonthlyIncome * 0.36 - toNumber(inputs.monthlyDebts)
-  const baseHousingBudget = Math.max(Math.min(frontEndCap, backEndCap), 0)
+  const effectiveMonthlyIncome = effectiveAnnualIncome / 12
   const colAdjustmentFactor = 1 - Math.min(toNumber(inputs.costOfLivingAdjustment), 40) / 100
 
-  const adjustedHousingBudget = baseHousingBudget * creditBand.factor * colAdjustmentFactor
+  let baseHousingBudget
+  if (isNet) {
+    // 25% of take-home — personal finance rule for not becoming house poor
+    // COL adjustment trims further since non-housing expenses are ~10% higher in Hawaii
+    baseHousingBudget = effectiveMonthlyIncome * 0.25 * colAdjustmentFactor
+  } else {
+    // Standard lender 28/36 rule on gross — lenders don't apply a COL haircut
+    const frontEndCap = grossMonthlyIncome * 0.28
+    const backEndCap = grossMonthlyIncome * 0.36 - toNumber(inputs.monthlyDebts)
+    baseHousingBudget = Math.max(Math.min(frontEndCap, backEndCap), 0)
+  }
+  const adjustedHousingBudget = baseHousingBudget * creditBand.factor
 
   const options = DOWN_PAYMENT_OPTIONS.map((downPercent) => {
     const downPaymentRate = downPercent / 100
@@ -102,7 +129,7 @@ export const calculateScenario = (annualIncome, inputs) => {
       downPaymentNeeded: homePrice * downPaymentRate,
       monthlyPrincipalAndInterest,
       monthlyTotalHousing,
-      remainingMonthlyBudget: Math.max(grossMonthlyIncome - monthlyTotalHousing, 0),
+    remainingMonthlyBudget: Math.max(effectiveMonthlyIncome - monthlyTotalHousing, 0),
     }
   })
 
@@ -111,6 +138,8 @@ export const calculateScenario = (annualIncome, inputs) => {
 
   return {
     grossMonthlyIncome,
+    effectiveMonthlyIncome,
+    isNet,
     annualIncome,
     adjustedHousingBudget,
     creditBand,

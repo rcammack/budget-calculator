@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import './App.css'
-import { calculateScenario, getAnnualPassive, percent, toNumber } from './calculations'
-import { CREDIT_SCORE_OPTIONS, DEFAULT_INPUTS, STORAGE_KEY } from './constants'
+import { calculateScenario, currency, getAnnualPassive, getInvestmentAnnualReturn, percent, toNumber } from './calculations'
+import { CREDIT_SCORE_OPTIONS, DEFAULT_INPUTS, MAX_401K_CONTRIBUTION, STORAGE_KEY, TAX_RATE_MARRIED, TAX_RATE_SINGLE } from './constants'
 import FrequencyInput from './components/FrequencyInput'
+import InvestmentInputs from './components/InvestmentInputs'
 import NumberInput from './components/NumberInput'
 import ScenarioCard from './components/ScenarioCard'
 
@@ -27,6 +28,25 @@ function App() {
   })
 
   useEffect(() => {
+    fetch(`${import.meta.env.BASE_URL}market-data.json`)
+      .then((res) => res.json())
+      .then((data) => {
+        setInputs((prev) => {
+          const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}')
+          const marketFields = ['mortgageRate', 'monthlyHoa', 'monthlyInsurance', 'propertyTaxRate', 'costOfLivingAdjustment']
+          const updates = {}
+          for (const field of marketFields) {
+            if (data[field] !== undefined && stored[field] === undefined) {
+              updates[field] = data[field]
+            }
+          }
+          return Object.keys(updates).length ? { ...prev, ...updates } : prev
+        })
+      })
+      .catch(() => {})
+  }, [])
+
+  useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(inputs))
   }, [inputs])
 
@@ -34,6 +54,19 @@ function App() {
     document.documentElement.setAttribute('data-theme', theme)
     localStorage.setItem('theme', theme)
   }, [theme])
+
+  // Auto-suggest tax rate based on filing status, unless user has customized it
+  useEffect(() => {
+    setInputs((prev) => {
+      const suggested = prev.includePartner ? TAX_RATE_MARRIED : TAX_RATE_SINGLE
+      const otherSuggested = prev.includePartner ? TAX_RATE_SINGLE : TAX_RATE_MARRIED
+      const isStillSuggested = toNumber(prev.effectiveTaxRate) === otherSuggested
+      if (!isStillSuggested) return prev
+      return { ...prev, effectiveTaxRate: suggested }
+    })
+  }, [inputs.includePartner])
+
+  const [showInvestments, setShowInvestments] = useState(false)
 
   const update = (field) => (value) => {
     setInputs((previous) => ({
@@ -44,23 +77,28 @@ function App() {
 
   const primaryAnnualIncome =
     toNumber(inputs.primarySalary) +
-    getAnnualPassive(inputs.primaryPassive, inputs.primaryPassiveFrequency)
+    getAnnualPassive(inputs.primaryPassive, inputs.primaryPassiveFrequency) +
+    getInvestmentAnnualReturn(inputs, 'primary')
 
   const partnerAnnualIncome =
     toNumber(inputs.partnerSalary) +
-    getAnnualPassive(inputs.partnerPassive, inputs.partnerPassiveFrequency)
+    getAnnualPassive(inputs.partnerPassive, inputs.partnerPassiveFrequency) +
+    getInvestmentAnnualReturn(inputs, 'partner')
+
+  const primary401kDeduction = toNumber(inputs.primary401kContribution)
+  const partner401kDeduction = toNumber(inputs.partner401kContribution)
 
   const soloScenario = useMemo(
-    () => calculateScenario(primaryAnnualIncome, inputs),
-    [primaryAnnualIncome, inputs],
+    () => calculateScenario(primaryAnnualIncome, inputs, primary401kDeduction),
+    [primaryAnnualIncome, inputs, primary401kDeduction],
   )
 
   const combinedScenario = useMemo(
     () =>
       inputs.includePartner
-        ? calculateScenario(primaryAnnualIncome + partnerAnnualIncome, inputs)
+        ? calculateScenario(primaryAnnualIncome + partnerAnnualIncome, inputs, primary401kDeduction + partner401kDeduction)
         : null,
-    [inputs, partnerAnnualIncome, primaryAnnualIncome],
+    [inputs, partnerAnnualIncome, primaryAnnualIncome, primary401kDeduction, partner401kDeduction],
   )
 
   return (
@@ -90,7 +128,35 @@ function App() {
       </header>
 
       <section className="panel">
-        <h2>Income Inputs</h2>
+        <div className="panel-header-row">
+          <h2>Income Inputs</h2>
+          <div className="mode-toggle" role="group" aria-label="Calculation mode">
+            <button
+              className={`mode-btn${inputs.incomeMode === 'net' ? ' active' : ''}`}
+              onClick={() => update('incomeMode')('net')}
+            >
+              Affordability
+            </button>
+            <button
+              className={`mode-btn${inputs.incomeMode === 'gross' ? ' active' : ''}`}
+              onClick={() => update('incomeMode')('gross')}
+            >
+              Lender
+            </button>
+          </div>
+        </div>
+
+        {inputs.incomeMode === 'net' && (
+          <div className="tax-rate-row">
+            <NumberInput
+              label="Effective tax rate (%)"
+              value={inputs.effectiveTaxRate}
+              onChange={update('effectiveTaxRate')}
+              step="0.1"
+              hint="Federal + Hawaii state + FICA. ~30% is typical for Hawaii."
+            />
+          </div>
+        )}
         <div className="grid two-col">
           <NumberInput
             label="Primary annual salary"
@@ -129,6 +195,89 @@ function App() {
               onAmountChange={update('partnerPassive')}
               onFrequencyChange={update('partnerPassiveFrequency')}
             />
+          </div>
+        )}
+
+        <div className="retirement-section">
+          <div className="retirement-row">
+            <span className="retirement-label">Primary 401(k)</span>
+            <NumberInput
+              label="Employee contribution ($/yr)"
+              value={inputs.primary401kContribution}
+              onChange={update('primary401kContribution')}
+              hint={`2025 max: $${MAX_401K_CONTRIBUTION.toLocaleString()}`}
+            />
+            <NumberInput
+              label="Employer match (%)"
+              value={inputs.primary401kMatchPercent}
+              onChange={update('primary401kMatchPercent')}
+              step="1"
+            />
+            <span className="retirement-match">
+              Employer adds{' '}
+              <strong>
+                {currency.format(
+                  Math.min(
+                    toNumber(inputs.primary401kContribution) * (toNumber(inputs.primary401kMatchPercent) / 100),
+                    toNumber(inputs.primarySalary) * 0.06,
+                  ),
+                )}
+                /yr
+              </strong>
+            </span>
+          </div>
+
+          {inputs.includePartner && (
+            <div className="retirement-row">
+              <span className="retirement-label">Partner 401(k)</span>
+              <NumberInput
+                label="Employee contribution ($/yr)"
+                value={inputs.partner401kContribution}
+                onChange={update('partner401kContribution')}
+                hint={`2025 max: $${MAX_401K_CONTRIBUTION.toLocaleString()}`}
+              />
+              <NumberInput
+                label="Employer match (%)"
+                value={inputs.partner401kMatchPercent}
+                onChange={update('partner401kMatchPercent')}
+                step="1"
+              />
+              <span className="retirement-match">
+                Employer adds{' '}
+                <strong>
+                  {currency.format(
+                    Math.min(
+                      toNumber(inputs.partner401kContribution) * (toNumber(inputs.partner401kMatchPercent) / 100),
+                      toNumber(inputs.partnerSalary) * 0.06,
+                    ),
+                  )}
+                  /yr
+                </strong>
+              </span>
+            </div>
+          )}
+        </div>
+
+        <div className="investment-toggle-row">
+          <button
+            className="toggle-btn"
+            onClick={() => setShowInvestments((v) => !v)}
+            aria-expanded={showInvestments}
+          >
+            {showInvestments ? '▾' : '▸'} Investment Accounts
+          </button>
+        </div>
+
+        {showInvestments && (
+          <div className="investment-section">
+            <p className="investment-section-label">Primary</p>
+            <InvestmentInputs prefix="primary" inputs={inputs} update={update} />
+            {inputs.includePartner && (
+              <>
+                <p className="investment-section-label">Partner</p>
+                <InvestmentInputs prefix="partner" inputs={inputs} update={update} />
+              </>
+            )}
           </div>
         )}
       </section>
