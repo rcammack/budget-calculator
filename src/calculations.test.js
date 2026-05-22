@@ -125,6 +125,23 @@ describe('calculateScenario', () => {
     expect(with401k.adjustedHousingBudget).toBe(without401k.adjustedHousingBudget)
   })
 
+  // Investment returns are excluded from the income passed to calculateScenario in
+  // lender mode (handled in App.jsx). These two tests document that contract:
+  it('identical incomes produce identical results regardless of mode (calculateScenario is pure)', () => {
+    const gross = calculateScenario(120000, GROSS_INPUTS)
+    const net   = calculateScenario(120000, NET_INPUTS)
+    // Same gross income → same grossMonthlyIncome; modes only differ in effectiveMonthlyIncome
+    expect(gross.grossMonthlyIncome).toBe(net.grossMonthlyIncome)
+  })
+
+  it('adding investment returns to income increases lender mode home price', () => {
+    // App.jsx passes salary-only income in lender mode and salary+returns in affordability.
+    // This test confirms calculateScenario responds correctly to higher income input.
+    const salaryOnly      = calculateScenario(120000, GROSS_INPUTS)
+    const salaryPlusReturns = calculateScenario(135000, GROSS_INPUTS) // simulates added investment income
+    expect(salaryPlusReturns.recommendedOption.homePrice).toBeGreaterThan(salaryOnly.recommendedOption.homePrice)
+  })
+
   it('home prices are positive for a reasonable income', () => {
     const scenario = calculateScenario(120000, GROSS_INPUTS)
     scenario.options.forEach((option) => {

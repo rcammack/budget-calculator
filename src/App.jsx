@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import './App.css'
-import { calculateScenario, currency, getAnnualPassive, getInvestmentAnnualReturn, percent, toNumber } from './calculations'
+import { calculateScenario, currency, getAnnualPassive, getInvestmentAnnualReturn, toNumber } from './calculations'
 import { CREDIT_SCORE_OPTIONS, DEFAULT_INPUTS, MAX_401K_CONTRIBUTION, STORAGE_KEY, TAX_RATE_MARRIED, TAX_RATE_SINGLE } from './constants'
 import FrequencyInput from './components/FrequencyInput'
 import InvestmentInputs from './components/InvestmentInputs'
 import NumberInput from './components/NumberInput'
+import DownPaymentAdvice from './components/DownPaymentAdvice'
 import ScenarioCard from './components/ScenarioCard'
 
 function App() {
@@ -78,15 +79,27 @@ function App() {
   const primaryAnnualIncome =
     toNumber(inputs.primarySalary) +
     getAnnualPassive(inputs.primaryPassive, inputs.primaryPassiveFrequency) +
-    getInvestmentAnnualReturn(inputs, 'primary')
+    (inputs.incomeMode === 'net' ? getInvestmentAnnualReturn(inputs, 'primary') : 0)
 
   const partnerAnnualIncome =
     toNumber(inputs.partnerSalary) +
     getAnnualPassive(inputs.partnerPassive, inputs.partnerPassiveFrequency) +
-    getInvestmentAnnualReturn(inputs, 'partner')
+    (inputs.incomeMode === 'net' ? getInvestmentAnnualReturn(inputs, 'partner') : 0)
 
   const primary401kDeduction = toNumber(inputs.primary401kContribution)
   const partner401kDeduction = toNumber(inputs.partner401kContribution)
+
+  // Liquid savings available for a down payment (HYSA + Stocks + Savings balances)
+  const primaryLiquidSavings =
+    toNumber(inputs.primaryHysaBalance) +
+    toNumber(inputs.primaryStocksBalance) +
+    toNumber(inputs.primarySavingsBalance)
+  const partnerLiquidSavings = inputs.includePartner
+    ? toNumber(inputs.partnerHysaBalance) +
+      toNumber(inputs.partnerStocksBalance) +
+      toNumber(inputs.partnerSavingsBalance)
+    : 0
+  const totalLiquidSavings = primaryLiquidSavings + partnerLiquidSavings
 
   const soloScenario = useMemo(
     () => calculateScenario(primaryAnnualIncome, inputs, primary401kDeduction),
@@ -120,10 +133,9 @@ function App() {
         </div>
         <h1>Home Affordability Calculator</h1>
         <p>
-          Estimates use the 28/36 rule with Honolulu defaults for property tax ({percent.format(
-            toNumber(inputs.propertyTaxRate),
-          )}
-          %), HOA, insurance, and cost-of-living adjustment.
+          Honolulu-focused affordability calculator. Affordability mode uses 25% of net
+          take-home; Lender mode uses the 28/36 rule on gross income. Defaults reflect
+          Honolulu market rates for HOA, insurance, property tax, and cost of living.
         </p>
       </header>
 
@@ -156,6 +168,13 @@ function App() {
               hint="Federal + Hawaii state + FICA. ~30% is typical for Hawaii."
             />
           </div>
+        )}
+
+        {inputs.incomeMode === 'gross' && (
+          <p className="mode-note">
+            Uses 28/36 rule on gross income. Counts salary and passive income only —
+            investment returns are excluded as lenders require a 2-year documented history.
+          </p>
         )}
         <div className="grid two-col">
           <NumberInput
@@ -340,6 +359,18 @@ function App() {
           <ScenarioCard title="Combined Income" scenario={combinedScenario} />
         )}
       </section>
+
+      {inputs.incomeMode === 'net' && (
+        <section className="panel">
+          <DownPaymentAdvice
+            inputs={inputs}
+            recommendedHomePrice={
+              (combinedScenario ?? soloScenario).recommendedOption.homePrice
+            }
+            liquidSavings={totalLiquidSavings}
+          />
+        </section>
+      )}
     </main>
   )
 }

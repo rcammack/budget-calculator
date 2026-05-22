@@ -113,6 +113,36 @@ test.describe('Home Affordability Calculator', () => {
     expect(before).toBe(after)
   })
 
+  test('investment returns do not affect Lender mode price', async ({ page }) => {
+    await page.getByRole('button', { name: 'Lender' }).click()
+    await page.waitForTimeout(100)
+
+    const getPrice = async () => {
+      const text = await page.locator('tr.recommended td:nth-child(2)').first().textContent()
+      return parseInt(text.replace(/[^0-9]/g, ''), 10)
+    }
+
+    const before = await getPrice()
+
+    // Enter a large HYSA balance — its return should not change lender mode price
+    await page.getByRole('button', { name: /Investment Accounts/ }).click()
+    // First input in first investment row is the HYSA balance field
+    await page.locator('.investment-row').first().locator('input').first().fill('500000')
+    await page.locator('.investment-row').first().locator('input').first().blur()
+    await page.waitForTimeout(100)
+
+    const after = await getPrice()
+    expect(before).toBe(after)
+  })
+
+  test('lender mode note is visible and disappears in affordability mode', async ({ page }) => {
+    await page.getByRole('button', { name: 'Lender' }).click()
+    await expect(page.locator('.mode-note')).toBeVisible()
+
+    await page.getByRole('button', { name: 'Affordability' }).click()
+    await expect(page.locator('.mode-note')).not.toBeVisible()
+  })
+
   // ── Tax rate auto-adjust ───────────────────────────────────────
   test('tax rate auto-adjusts when partner is added', async ({ page }) => {
     const taxInput = page.getByLabel(/Effective tax rate/)

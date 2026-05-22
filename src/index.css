@@ -23,8 +23,8 @@
   --text-td: #07111f;
   --text-strong: #07111f;
   --text-recommended: var(--text-td);
-
-  --focus-ring: #1565c0;
+  --color-positive: #1a7f3c;
+  --text-danger: #c0392b;
 
   --radius-panel: 1rem;
   --radius-input: 0.65rem;
@@ -75,8 +75,8 @@
   --text-td: #f0e8ff;
   --text-strong: #ffffff;
   --text-recommended: var(--text-td);
-
-  --focus-ring: #00e5cc;
+  --color-positive: #00e5cc;
+  --text-danger: #ff6b6b;
 
   --radius-panel: 0.85rem;
   --radius-input: 0.5rem;
@@ -127,8 +127,8 @@
   --text-td: #000000;
   --text-strong: #000000;
   --text-recommended: #ffffff;
-
-  --focus-ring: #000000;
+  --color-positive: #000000;
+  --text-danger: #000000;
 
   --radius-panel: 0px;
   --radius-input: 0px;

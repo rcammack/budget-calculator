@@ -198,6 +198,84 @@ input[type='radio'] {
   padding-top: 0.75rem;
 }
 
+/* ── Down payment advice ───────────────────────────────────────── */
+.dp-advice {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.dp-advice h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.dp-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.dp-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 0.88rem;
+  gap: 1rem;
+}
+
+.dp-excess strong  { color: var(--color-positive); }
+.dp-shortfall strong { color: var(--text-danger); }
+
+.dp-label {
+  font-size: 0.85rem;
+  color: var(--text-hint);
+  margin: 0;
+}
+
+.dp-compare {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+}
+
+@media (max-width: 640px) {
+  .dp-compare { grid-template-columns: 1fr; }
+}
+
+.dp-option {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.65rem 0.75rem;
+  border: var(--border-width-panel) solid var(--border-panel);
+  border-radius: var(--radius-input);
+  background: var(--bg-input);
+}
+
+.dp-winner {
+  border-color: var(--color-positive);
+}
+
+.dp-option-name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-label);
+}
+
+.dp-option-return {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.dp-verdict {
+  font-size: 0.75rem;
+  color: var(--text-hint);
+}
+
+.dp-verdict-yes { color: var(--color-positive); }
+.dp-verdict-no  { color: var(--text-danger); }
+
 /* ── Results ───────────────────────────────────────────────────── */
 .results-grid {
   display: grid;
@@ -317,6 +395,13 @@ strong {
 .mode-btn.active {
   background: var(--border-panel);
   color: var(--bg-panel);
+}
+
+.mode-note {
+  font-size: 0.8rem;
+  color: var(--text-hint);
+  margin: 0 0 0.5rem;
+  line-height: 1.5;
 }
 
 .tax-rate-row {
