@@ -159,42 +159,7 @@ function App() {
       </header>
 
       <section className="panel">
-        <div className="panel-header-row">
-          <h2>Income Inputs</h2>
-          <div className="mode-toggle" role="group" aria-label="Calculation mode">
-            <button
-              className={`mode-btn${inputs.incomeMode === 'net' ? ' active' : ''}`}
-              onClick={() => update('incomeMode')('net')}
-            >
-              Affordability
-            </button>
-            <button
-              className={`mode-btn${inputs.incomeMode === 'gross' ? ' active' : ''}`}
-              onClick={() => update('incomeMode')('gross')}
-            >
-              Lender
-            </button>
-          </div>
-        </div>
-
-        {inputs.incomeMode === 'net' && (
-          <div className="tax-rate-row">
-            <NumberInput
-              label="Effective tax rate (%)"
-              value={inputs.effectiveTaxRate}
-              onChange={update('effectiveTaxRate')}
-              step="0.1"
-              hint="Federal + Hawaii state + FICA. ~30% is typical for Hawaii."
-            />
-          </div>
-        )}
-
-        {inputs.incomeMode === 'gross' && (
-          <p className="mode-note">
-            Uses 28/36 rule on gross income. Counts salary and passive income only —
-            investment returns are excluded as lenders require a 2-year documented history.
-          </p>
-        )}
+        <h2>Income Inputs</h2>
 
         {/* Primary person block */}
         <div className="person-block">
@@ -336,6 +301,43 @@ function App() {
         )}
       </section>
 
+      {/* Mode toggle — sits between income inputs and the mode-dependent sections */}
+      <div className="mode-toggle-bar">
+        <div className="mode-toggle" role="group" aria-label="Calculation mode">
+          <button
+            className={`mode-btn${inputs.incomeMode === 'net' ? ' active' : ''}`}
+            onClick={() => update('incomeMode')('net')}
+          >
+            Affordability
+          </button>
+          <button
+            className={`mode-btn${inputs.incomeMode === 'gross' ? ' active' : ''}`}
+            onClick={() => update('incomeMode')('gross')}
+          >
+            Lender
+          </button>
+        </div>
+
+        {inputs.incomeMode === 'net' && (
+          <div className="tax-rate-row">
+            <NumberInput
+              label="Effective tax rate (%)"
+              value={inputs.effectiveTaxRate}
+              onChange={update('effectiveTaxRate')}
+              step="0.1"
+              hint="Federal + Hawaii state + FICA. ~30% is typical for Hawaii."
+            />
+          </div>
+        )}
+
+        {inputs.incomeMode === 'gross' && (
+          <p className="mode-note">
+            Uses 28/36 rule on gross income. Counts salary and passive income only —
+            investment returns are excluded as lenders require a 2-year documented history.
+          </p>
+        )}
+      </div>
+
       <section className="panel">
         <h2>Affordability Inputs</h2>
         <div className="grid three-col">
@@ -360,6 +362,7 @@ function App() {
             label="Monthly non-housing debt"
             value={inputs.monthlyDebts}
             onChange={update('monthlyDebts')}
+            tooltip="Car loans, student loans, min. credit card payments. Not groceries or general living expenses."
           />
           <NumberInput
             label="Monthly HOA"

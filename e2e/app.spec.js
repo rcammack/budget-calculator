@@ -53,6 +53,28 @@ test.describe('Home Affordability Calculator', () => {
     await expect(page.getByText(/Gross monthly income/)).toBeVisible()
   })
 
+  test('Affordability-only sections are hidden in Lender mode and visible in Affordability mode', async ({ page }) => {
+    // Set up a HYSA balance so Down Payment Advice renders
+    await page.getByRole('button', { name: /Investment Accounts/ }).first().click()
+    await page.locator('.investment-row').first().locator('input').first().fill('300000')
+    await page.locator('.investment-row').first().locator('input').first().blur()
+    await page.waitForTimeout(100)
+
+    // Affordability mode — both sections visible
+    await expect(page.getByText(/Can Your Investments Keep Up/)).toBeVisible()
+    await expect(page.getByText(/Down Payment Strategy/)).toBeVisible()
+
+    // Switch to Lender — both sections hidden
+    await page.getByRole('button', { name: 'Lender' }).click()
+    await expect(page.getByText(/Can Your Investments Keep Up/)).not.toBeVisible()
+    await expect(page.getByText(/Down Payment Strategy/)).not.toBeVisible()
+
+    // Switch back — both reappear
+    await page.getByRole('button', { name: 'Affordability' }).click()
+    await expect(page.getByText(/Can Your Investments Keep Up/)).toBeVisible()
+    await expect(page.getByText(/Down Payment Strategy/)).toBeVisible()
+  })
+
   test('Lender mode produces higher home prices than Affordability mode', async ({ page }) => {
     const getPrice = async () => {
       const text = await page.locator('tr.recommended td:nth-child(2)').first().textContent()
