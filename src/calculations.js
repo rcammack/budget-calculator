@@ -32,6 +32,54 @@ export const getInvestmentAnnualReturn = (inputs, prefix) =>
     return total + balance * (rate / 100)
   }, 0)
 
+// Weighted average annual return rate across all investment accounts for a given prefix.
+// Falls back to the stocks rate if total balance is zero.
+export const getWeightedReturnRate = (inputs, prefix) => {
+  const totalBalance = INVESTMENT_ACCOUNTS.reduce(
+    (sum, { key }) => sum + toNumber(inputs[`${prefix}${key}Balance`]),
+    0,
+  )
+  if (!totalBalance) return toNumber(inputs[`${prefix}StocksRate`])
+
+  const weightedSum = INVESTMENT_ACCOUNTS.reduce((sum, { key, type }) => {
+    const balance = toNumber(inputs[`${prefix}${key}Balance`])
+    if (!balance) return sum
+    const rate = toNumber(inputs[`${prefix}${key}Rate`])
+    if (type === 'espp') {
+      const sharesValue = balance / (1 - ESPP_DISCOUNT)
+      const effectiveRate = ((sharesValue - balance + sharesValue * (rate / 100)) / balance) * 100
+      return sum + balance * effectiveRate
+    }
+    return sum + balance * rate
+  }, 0)
+
+  return weightedSum / totalBalance
+}
+
+// Project portfolio value and required 20% down payment year by year.
+export const projectMarketRace = ({
+  currentPortfolio,
+  portfolioReturnRate,
+  annualContribution,
+  targetHomePrice,
+  housingAppreciationRate,
+  years = 10,
+}) => {
+  const r = portfolioReturnRate / 100
+  const h = housingAppreciationRate / 100
+
+  return Array.from({ length: years + 1 }, (_, year) => {
+    const portfolio =
+      currentPortfolio * Math.pow(1 + r, year) +
+      (r > 0
+        ? annualContribution * ((Math.pow(1 + r, year) - 1) / r)
+        : annualContribution * year)
+    const homePrice = targetHomePrice * Math.pow(1 + h, year)
+    const downPaymentNeeded = homePrice * 0.2
+    return { year, portfolio, homePrice, downPaymentNeeded, gap: downPaymentNeeded - portfolio }
+  })
+}
+
 const getMonthlyPrincipalAndInterest = (loanAmount, annualRate) => {
   const principal = toNumber(loanAmount)
   if (!principal) return 0

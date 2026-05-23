@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { calculateScenario, getAnnualPassive, getInvestmentAnnualReturn, toNumber } from './calculations'
+import { calculateScenario, getAnnualPassive, getInvestmentAnnualReturn, getWeightedReturnRate, projectMarketRace, toNumber } from './calculations'
 import { DEFAULT_INPUTS } from './constants'
 
 const GROSS_INPUTS = { ...DEFAULT_INPUTS, incomeMode: 'gross' }
@@ -160,6 +160,137 @@ describe('calculateScenario', () => {
     const scenario = calculateScenario(10000, brokeInputs)
     scenario.options.forEach((option) => {
       expect(option.homePrice).toBe(0)
+    })
+  })
+})
+
+describe('getWeightedReturnRate', () => {
+  it('falls back to stocks rate when all balances are zero', () => {
+    const inputs = { ...DEFAULT_INPUTS, primaryStocksRate: 7 }
+    expect(getWeightedReturnRate(inputs, 'primary')).toBe(7)
+  })
+
+  it('returns the single account rate when only one account has a balance', () => {
+    const inputs = { ...DEFAULT_INPUTS, primaryHysaBalance: 50000, primaryHysaRate: 5 }
+    expect(getWeightedReturnRate(inputs, 'primary')).toBeCloseTo(5, 5)
+  })
+
+  it('returns weighted average across multiple accounts', () => {
+    const inputs = {
+      ...DEFAULT_INPUTS,
+      primaryHysaBalance: 100000, primaryHysaRate: 5,   // weight 100k @ 5%
+      primaryStocksBalance: 100000, primaryStocksRate: 9, // weight 100k @ 9%
+    }
+    // Weighted avg = (100k*5 + 100k*9) / 200k = 7
+    expect(getWeightedReturnRate(inputs, 'primary')).toBeCloseTo(7, 5)
+  })
+
+  it('weights proportionally when balances are unequal', () => {
+    const inputs = {
+      ...DEFAULT_INPUTS,
+      primaryHysaBalance: 25000, primaryHysaRate: 4,    // 25%  weight
+      primaryStocksBalance: 75000, primaryStocksRate: 8, // 75% weight
+    }
+    // (25k*4 + 75k*8) / 100k = (100 + 600) / 100 = 7
+    expect(getWeightedReturnRate(inputs, 'primary')).toBeCloseTo(7, 5)
+  })
+
+  it('uses ESPP effective rate (discount + appreciation) in weighting', () => {
+    // $9,000 ESPP contribution buys $10,000 of stock (10% discount)
+    // With 0% stock appreciation: effective rate = 1000/9000 * 100 ≈ 11.11%
+    const inputs = { ...DEFAULT_INPUTS, primaryEsppBalance: 9000, primaryEsppRate: 0 }
+    const rate = getWeightedReturnRate(inputs, 'primary')
+    expect(rate).toBeCloseTo(11.11, 1)
+  })
+
+  it('uses the correct prefix — partner balances do not affect primary rate', () => {
+    const inputs = {
+      ...DEFAULT_INPUTS,
+      partnerHysaBalance: 100000, partnerHysaRate: 5,
+      primaryStocksRate: 7,
+    }
+    expect(getWeightedReturnRate(inputs, 'primary')).toBe(7) // falls back to stocks rate
+    expect(getWeightedReturnRate(inputs, 'partner')).toBeCloseTo(5, 5)
+  })
+})
+
+describe('projectMarketRace', () => {
+  const BASE = {
+    currentPortfolio: 200000,
+    portfolioReturnRate: 7,
+    annualContribution: 0,
+    targetHomePrice: 1000000,
+    housingAppreciationRate: 5,
+    years: 10,
+  }
+
+  it('returns years + 1 entries (year 0 through year N)', () => {
+    const result = projectMarketRace(BASE)
+    expect(result).toHaveLength(11)
+    expect(result[0].year).toBe(0)
+    expect(result[10].year).toBe(10)
+  })
+
+  it('year 0 has the exact current portfolio and home price', () => {
+    const result = projectMarketRace(BASE)
+    expect(result[0].portfolio).toBe(200000)
+    expect(result[0].homePrice).toBe(1000000)
+    expect(result[0].downPaymentNeeded).toBe(200000)
+  })
+
+  it('portfolio compounds at the portfolio return rate', () => {
+    const result = projectMarketRace({ ...BASE, annualContribution: 0 })
+    // Year 1: 200,000 * 1.07 = 214,000
+    expect(result[1].portfolio).toBeCloseTo(200000 * 1.07, 0)
+    // Year 10: 200,000 * 1.07^10
+    expect(result[10].portfolio).toBeCloseTo(200000 * Math.pow(1.07, 10), 0)
+  })
+
+  it('home price compounds at the housing appreciation rate', () => {
+    const result = projectMarketRace(BASE)
+    expect(result[1].homePrice).toBeCloseTo(1000000 * 1.05, 0)
+    expect(result[10].homePrice).toBeCloseTo(1000000 * Math.pow(1.05, 10), 0)
+  })
+
+  it('gap decreases over time when portfolio rate > housing rate', () => {
+    // 7% portfolio vs 5% housing → gap should close
+    const result = projectMarketRace(BASE)
+    expect(result[10].gap).toBeLessThan(result[0].gap)
+  })
+
+  it('gap increases over time when portfolio rate < housing rate', () => {
+    const result = projectMarketRace({ ...BASE, portfolioReturnRate: 3, housingAppreciationRate: 7 })
+    expect(result[10].gap).toBeGreaterThan(result[0].gap)
+  })
+
+  it('gap reaches zero (or below) when portfolio already covers 20% down', () => {
+    // Portfolio = 500k, 20% down on 1M home = 200k — already covered
+    const result = projectMarketRace({ ...BASE, currentPortfolio: 500000 })
+    expect(result[0].gap).toBeLessThanOrEqual(0)
+  })
+
+  it('annual contributions accelerate portfolio growth', () => {
+    const noContrib = projectMarketRace({ ...BASE, annualContribution: 0 })
+    const withContrib = projectMarketRace({ ...BASE, annualContribution: 50000 })
+    expect(withContrib[10].portfolio).toBeGreaterThan(noContrib[10].portfolio)
+  })
+
+  it('handles zero portfolio return rate with linear contribution growth', () => {
+    const result = projectMarketRace({
+      ...BASE,
+      currentPortfolio: 0,
+      portfolioReturnRate: 0,
+      annualContribution: 10000,
+    })
+    // With 0% return, portfolio = contributions * year
+    expect(result[5].portfolio).toBeCloseTo(50000, 0)
+    expect(result[10].portfolio).toBeCloseTo(100000, 0)
+  })
+
+  it('gap field equals downPaymentNeeded minus portfolio', () => {
+    const result = projectMarketRace(BASE)
+    result.forEach(({ gap, downPaymentNeeded, portfolio }) => {
+      expect(gap).toBeCloseTo(downPaymentNeeded - portfolio, 0)
     })
   })
 })

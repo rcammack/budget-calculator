@@ -68,4 +68,7 @@ export const DEFAULT_INPUTS = {
   monthlyInsurance: 175,
   propertyTaxRate: 0.28,
   costOfLivingAdjustment: 10,
+  housingAppreciationRate: 5,
+  targetHomePrice: 1250000,
+  annualSavingsContribution: 0,
 }

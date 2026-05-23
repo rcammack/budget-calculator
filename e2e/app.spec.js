@@ -185,6 +185,70 @@ test.describe('Home Affordability Calculator', () => {
     await expect(page.getByText(/ESPP/)).toBeVisible()
   })
 
+  // ── Market Race ───────────────────────────────────────────────
+  test('Market Race section is visible in Affordability mode', async ({ page }) => {
+    await expect(page.getByText(/Can Your Investments Keep Up/)).toBeVisible()
+  })
+
+  test('Market Race section is hidden in Lender mode', async ({ page }) => {
+    await page.getByRole('button', { name: 'Lender' }).click()
+    await expect(page.getByText(/Can Your Investments Keep Up/)).not.toBeVisible()
+  })
+
+  test('Market Race section reappears when switching back to Affordability mode', async ({ page }) => {
+    await page.getByRole('button', { name: 'Lender' }).click()
+    await page.getByRole('button', { name: 'Affordability' }).click()
+    await expect(page.getByText(/Can Your Investments Keep Up/)).toBeVisible()
+  })
+
+  test('Market Race shows Today, Year 5, and Year 10 rows', async ({ page }) => {
+    await expect(page.getByText('Today')).toBeVisible()
+    await expect(page.getByText('Year 5')).toBeVisible()
+    await expect(page.getByText('Year 10')).toBeVisible()
+  })
+
+  test('Market Race shows portfolio return rate and housing appreciation rate stats', async ({ page }) => {
+    await expect(page.locator('.race-stat-value').first()).toContainText('%/yr')
+    await expect(page.locator('.race-stat-value').nth(1)).toContainText('%/yr')
+  })
+
+  test('changing target home price updates the Market Race table', async ({ page }) => {
+    const before = await page.locator('.race-row').nth(1).textContent()
+
+    await page.getByLabel('Target home price ($)').fill('1500000')
+    await page.getByLabel('Target home price ($)').blur()
+    await page.waitForTimeout(100)
+
+    const after = await page.locator('.race-row').nth(1).textContent()
+    expect(after).not.toBe(before)
+  })
+
+  test('increasing annual savings contribution reduces the gap over time', async ({ page }) => {
+    const getYear10Gap = async () => {
+      const rows = page.locator('.race-row')
+      return rows.last().locator('.race-gap').textContent()
+    }
+
+    const gapBefore = await getYear10Gap()
+
+    await page.getByLabel('Additional annual savings ($)').fill('100000')
+    await page.getByLabel('Additional annual savings ($)').blur()
+    await page.waitForTimeout(100)
+
+    const gapAfter = await getYear10Gap()
+    expect(gapAfter).not.toBe(gapBefore)
+  })
+
+  test('shows gap-closing verdict when portfolio return rate exceeds housing appreciation', async ({ page }) => {
+    // Set an investment balance so the portfolio has something to grow
+    await page.getByRole('button', { name: /Investment Accounts/ }).first().click()
+    await page.locator('.investment-row').first().locator('input').first().fill('300000')
+    await page.locator('.investment-row').first().locator('input').first().blur()
+    await page.waitForTimeout(100)
+    // Default stocks rate (~7%) > housing appreciation (5%) → gap should be closing
+    await expect(page.locator('.race-verdict-good')).toBeVisible()
+  })
+
   // ── Misc ──────────────────────────────────────────────────────
   test('updates results when primary salary changes', async ({ page }) => {
     const firstPrice = await page.locator('tr.recommended td:nth-child(2)').first().textContent()

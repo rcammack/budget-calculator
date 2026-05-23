@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import './App.css'
-import { calculateScenario, currency, getAnnualPassive, getInvestmentAnnualReturn, toNumber } from './calculations'
-import { CREDIT_SCORE_OPTIONS, DEFAULT_INPUTS, MAX_401K_CONTRIBUTION, STORAGE_KEY, TAX_RATE_MARRIED, TAX_RATE_SINGLE } from './constants'
+import { calculateScenario, currency, getAnnualPassive, getInvestmentAnnualReturn, getWeightedReturnRate, toNumber } from './calculations'
+import { CREDIT_SCORE_OPTIONS, DEFAULT_INPUTS, INVESTMENT_ACCOUNTS, MAX_401K_CONTRIBUTION, STORAGE_KEY, TAX_RATE_MARRIED, TAX_RATE_SINGLE } from './constants'
 import FrequencyInput from './components/FrequencyInput'
 import InvestmentInputs from './components/InvestmentInputs'
 import NumberInput from './components/NumberInput'
 import DownPaymentAdvice from './components/DownPaymentAdvice'
+import MarketRace from './components/MarketRace'
 import ScenarioCard from './components/ScenarioCard'
 
 function App() {
@@ -34,7 +35,7 @@ function App() {
       .then((data) => {
         setInputs((prev) => {
           const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}')
-          const marketFields = ['mortgageRate', 'monthlyHoa', 'monthlyInsurance', 'propertyTaxRate', 'costOfLivingAdjustment']
+          const marketFields = ['mortgageRate', 'monthlyHoa', 'monthlyInsurance', 'propertyTaxRate', 'costOfLivingAdjustment', 'housingAppreciationRate']
           const updates = {}
           for (const field of marketFields) {
             if (data[field] !== undefined && stored[field] === undefined) {
@@ -67,7 +68,8 @@ function App() {
     })
   }, [inputs.includePartner])
 
-  const [showInvestments, setShowInvestments] = useState(false)
+  const [showPrimaryInvestments, setShowPrimaryInvestments] = useState(false)
+  const [showPartnerInvestments, setShowPartnerInvestments] = useState(false)
 
   const update = (field) => (value) => {
     setInputs((previous) => ({
@@ -100,6 +102,23 @@ function App() {
       toNumber(inputs.partnerSavingsBalance)
     : 0
   const totalLiquidSavings = primaryLiquidSavings + partnerLiquidSavings
+
+  // Total portfolio across ALL investment accounts (including CDs, ESPP) for market race
+  const primaryPortfolioBalance = INVESTMENT_ACCOUNTS.reduce(
+    (sum, { key }) => sum + toNumber(inputs[`primary${key}Balance`]), 0,
+  )
+  const partnerPortfolioBalance = inputs.includePartner
+    ? INVESTMENT_ACCOUNTS.reduce((sum, { key }) => sum + toNumber(inputs[`partner${key}Balance`]), 0)
+    : 0
+  const totalPortfolio = primaryPortfolioBalance + partnerPortfolioBalance
+
+  // Weighted return rate combined across primary (and partner if included)
+  const primaryReturnRate = getWeightedReturnRate(inputs, 'primary')
+  const partnerReturnRate = getWeightedReturnRate(inputs, 'partner')
+  const portfolioReturnRate =
+    totalPortfolio > 0
+      ? (primaryReturnRate * primaryPortfolioBalance + (inputs.includePartner ? partnerReturnRate * partnerPortfolioBalance : 0)) / totalPortfolio
+      : primaryReturnRate
 
   const soloScenario = useMemo(
     () => calculateScenario(primaryAnnualIncome, inputs, primary401kDeduction),
@@ -176,22 +195,73 @@ function App() {
             investment returns are excluded as lenders require a 2-year documented history.
           </p>
         )}
-        <div className="grid two-col">
-          <NumberInput
-            label="Primary annual salary"
-            value={inputs.primarySalary}
-            onChange={update('primarySalary')}
-          />
-          <FrequencyInput
-            label="Primary passive income"
-            amount={inputs.primaryPassive}
-            frequency={inputs.primaryPassiveFrequency}
-            onAmountChange={update('primaryPassive')}
-            onFrequencyChange={update('primaryPassiveFrequency')}
-          />
+
+        {/* Primary person block */}
+        <div className="person-block">
+          <div className="grid two-col">
+            <NumberInput
+              label="Primary annual salary"
+              value={inputs.primarySalary}
+              onChange={update('primarySalary')}
+            />
+            <FrequencyInput
+              label="Primary passive income"
+              amount={inputs.primaryPassive}
+              frequency={inputs.primaryPassiveFrequency}
+              onAmountChange={update('primaryPassive')}
+              onFrequencyChange={update('primaryPassiveFrequency')}
+            />
+          </div>
+
+          <div className="retirement-section">
+            <div className="retirement-row">
+              <span className="retirement-label">401(k)</span>
+              <NumberInput
+                label="Employee contribution ($/yr)"
+                value={inputs.primary401kContribution}
+                onChange={update('primary401kContribution')}
+                hint={`2025 max: $${MAX_401K_CONTRIBUTION.toLocaleString()}`}
+              />
+              <NumberInput
+                label="Employer match (%)"
+                value={inputs.primary401kMatchPercent}
+                onChange={update('primary401kMatchPercent')}
+                step="1"
+              />
+              <span className="retirement-match">
+                Employer adds{' '}
+                <strong>
+                  {currency.format(
+                    Math.min(
+                      toNumber(inputs.primary401kContribution) * (toNumber(inputs.primary401kMatchPercent) / 100),
+                      toNumber(inputs.primarySalary) * 0.06,
+                    ),
+                  )}
+                  /yr
+                </strong>
+              </span>
+            </div>
+          </div>
+
+          <div className="investment-toggle-row">
+            <button
+              className="toggle-btn"
+              onClick={() => setShowPrimaryInvestments((v) => !v)}
+              aria-expanded={showPrimaryInvestments}
+            >
+              {showPrimaryInvestments ? '▾' : '▸'} Investment Accounts
+            </button>
+          </div>
+
+          {showPrimaryInvestments && (
+            <div className="investment-section">
+              <InvestmentInputs prefix="primary" inputs={inputs} update={update} />
+            </div>
+          )}
         </div>
 
-        <label className="toggle">
+        {/* Partner toggle at the bottom */}
+        <label className="toggle partner-toggle">
           <input
             type="checkbox"
             checked={inputs.includePartner}
@@ -201,101 +271,66 @@ function App() {
         </label>
 
         {inputs.includePartner && (
-          <div className="grid two-col partner-grid">
-            <NumberInput
-              label="Partner annual salary"
-              value={inputs.partnerSalary}
-              onChange={update('partnerSalary')}
-            />
-            <FrequencyInput
-              label="Partner passive income"
-              amount={inputs.partnerPassive}
-              frequency={inputs.partnerPassiveFrequency}
-              onAmountChange={update('partnerPassive')}
-              onFrequencyChange={update('partnerPassiveFrequency')}
-            />
-          </div>
-        )}
-
-        <div className="retirement-section">
-          <div className="retirement-row">
-            <span className="retirement-label">Primary 401(k)</span>
-            <NumberInput
-              label="Employee contribution ($/yr)"
-              value={inputs.primary401kContribution}
-              onChange={update('primary401kContribution')}
-              hint={`2025 max: $${MAX_401K_CONTRIBUTION.toLocaleString()}`}
-            />
-            <NumberInput
-              label="Employer match (%)"
-              value={inputs.primary401kMatchPercent}
-              onChange={update('primary401kMatchPercent')}
-              step="1"
-            />
-            <span className="retirement-match">
-              Employer adds{' '}
-              <strong>
-                {currency.format(
-                  Math.min(
-                    toNumber(inputs.primary401kContribution) * (toNumber(inputs.primary401kMatchPercent) / 100),
-                    toNumber(inputs.primarySalary) * 0.06,
-                  ),
-                )}
-                /yr
-              </strong>
-            </span>
-          </div>
-
-          {inputs.includePartner && (
-            <div className="retirement-row">
-              <span className="retirement-label">Partner 401(k)</span>
+          <div className="person-block partner-block">
+            <div className="grid two-col">
               <NumberInput
-                label="Employee contribution ($/yr)"
-                value={inputs.partner401kContribution}
-                onChange={update('partner401kContribution')}
-                hint={`2025 max: $${MAX_401K_CONTRIBUTION.toLocaleString()}`}
+                label="Partner annual salary"
+                value={inputs.partnerSalary}
+                onChange={update('partnerSalary')}
               />
-              <NumberInput
-                label="Employer match (%)"
-                value={inputs.partner401kMatchPercent}
-                onChange={update('partner401kMatchPercent')}
-                step="1"
+              <FrequencyInput
+                label="Partner passive income"
+                amount={inputs.partnerPassive}
+                frequency={inputs.partnerPassiveFrequency}
+                onAmountChange={update('partnerPassive')}
+                onFrequencyChange={update('partnerPassiveFrequency')}
               />
-              <span className="retirement-match">
-                Employer adds{' '}
-                <strong>
-                  {currency.format(
-                    Math.min(
-                      toNumber(inputs.partner401kContribution) * (toNumber(inputs.partner401kMatchPercent) / 100),
-                      toNumber(inputs.partnerSalary) * 0.06,
-                    ),
-                  )}
-                  /yr
-                </strong>
-              </span>
             </div>
-          )}
-        </div>
 
-        <div className="investment-toggle-row">
-          <button
-            className="toggle-btn"
-            onClick={() => setShowInvestments((v) => !v)}
-            aria-expanded={showInvestments}
-          >
-            {showInvestments ? '▾' : '▸'} Investment Accounts
-          </button>
-        </div>
+            <div className="retirement-section">
+              <div className="retirement-row">
+                <span className="retirement-label">401(k)</span>
+                <NumberInput
+                  label="Employee contribution ($/yr)"
+                  value={inputs.partner401kContribution}
+                  onChange={update('partner401kContribution')}
+                  hint={`2025 max: $${MAX_401K_CONTRIBUTION.toLocaleString()}`}
+                />
+                <NumberInput
+                  label="Employer match (%)"
+                  value={inputs.partner401kMatchPercent}
+                  onChange={update('partner401kMatchPercent')}
+                  step="1"
+                />
+                <span className="retirement-match">
+                  Employer adds{' '}
+                  <strong>
+                    {currency.format(
+                      Math.min(
+                        toNumber(inputs.partner401kContribution) * (toNumber(inputs.partner401kMatchPercent) / 100),
+                        toNumber(inputs.partnerSalary) * 0.06,
+                      ),
+                    )}
+                    /yr
+                  </strong>
+                </span>
+              </div>
+            </div>
 
-        {showInvestments && (
-          <div className="investment-section">
-            <p className="investment-section-label">Primary</p>
-            <InvestmentInputs prefix="primary" inputs={inputs} update={update} />
-            {inputs.includePartner && (
-              <>
-                <p className="investment-section-label">Partner</p>
+            <div className="investment-toggle-row">
+              <button
+                className="toggle-btn"
+                onClick={() => setShowPartnerInvestments((v) => !v)}
+                aria-expanded={showPartnerInvestments}
+              >
+                {showPartnerInvestments ? '▾' : '▸'} Investment Accounts
+              </button>
+            </div>
+
+            {showPartnerInvestments && (
+              <div className="investment-section">
                 <InvestmentInputs prefix="partner" inputs={inputs} update={update} />
-              </>
+              </div>
             )}
           </div>
         )}
@@ -368,6 +403,17 @@ function App() {
               (combinedScenario ?? soloScenario).recommendedOption.homePrice
             }
             liquidSavings={totalLiquidSavings}
+          />
+        </section>
+      )}
+
+      {inputs.incomeMode === 'net' && (
+        <section className="panel">
+          <MarketRace
+            inputs={inputs}
+            update={update}
+            currentPortfolio={totalPortfolio}
+            portfolioReturnRate={portfolioReturnRate}
           />
         </section>
       )}

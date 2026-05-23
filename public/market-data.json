@@ -3,5 +3,6 @@
   "monthlyHoa": 500,
   "monthlyInsurance": 175,
   "propertyTaxRate": 0.28,
-  "costOfLivingAdjustment": 10
+  "costOfLivingAdjustment": 10,
+  "housingAppreciationRate": 5
 }

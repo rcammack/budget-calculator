@@ -198,6 +198,128 @@ input[type='radio'] {
   padding-top: 0.75rem;
 }
 
+/* ── Person blocks ─────────────────────────────────────────────── */
+.person-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.partner-block {
+  border-top: 1px dashed var(--border-partner);
+  padding-top: 0.75rem;
+}
+
+.partner-toggle {
+  margin-top: 0.5rem;
+}
+
+/* ── Market race ───────────────────────────────────────────────── */
+.market-race {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.market-race h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.market-race-inputs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+}
+
+@media (max-width: 640px) {
+  .market-race-inputs { grid-template-columns: 1fr; }
+}
+
+.market-race-stats {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.race-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.race-stat-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-label);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.race-stat-value {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.race-stat-hint {
+  font-size: 0.72rem;
+  color: var(--text-hint);
+}
+
+.race-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border: var(--border-width-panel) solid var(--border-panel);
+  border-radius: var(--radius-input);
+  overflow: hidden;
+}
+
+.race-row {
+  display: grid;
+  grid-template-columns: 5rem 1fr 1fr 1fr;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.85rem;
+  border-bottom: var(--border-width-panel) solid var(--border-td);
+}
+
+.race-row:last-child { border-bottom: none; }
+
+.race-row-header {
+  background: var(--bg-th);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-th);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.race-row-reached {
+  background: var(--bg-recommended);
+}
+
+.race-year {
+  font-weight: 600;
+  color: var(--text-label);
+}
+
+.race-gap { font-weight: 700; }
+.race-gap-met      { color: var(--color-positive); }
+.race-gap-closing  { color: var(--color-positive); }
+.race-gap-widening { color: var(--text-danger); }
+
+.race-verdict {
+  font-size: 0.85rem;
+  line-height: 1.5;
+  padding: 0.65rem 0.75rem;
+  border-radius: var(--radius-input);
+  border: var(--border-width-panel) solid var(--border-panel);
+}
+
+.race-verdict-good { border-color: var(--color-positive); }
+.race-verdict-bad  { border-color: var(--text-danger); }
+
 /* ── Down payment advice ───────────────────────────────────────── */
 .dp-advice {
   display: flex;
