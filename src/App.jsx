@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import './App.css'
-import { calculateScenario, currency, getAnnualPassive, getInvestmentAnnualReturn, getWeightedReturnRate, toNumber } from './calculations'
-import { CREDIT_SCORE_OPTIONS, DEFAULT_INPUTS, INVESTMENT_ACCOUNTS, MAX_401K_CONTRIBUTION, STORAGE_KEY, TAX_RATE_MARRIED, TAX_RATE_SINGLE } from './constants'
+import { calculateScenario, currency, getAnnualIncome, getCombinedPortfolioReturnRate, getEmployerMatch, getLiquidSavings, getPortfolioBalance, toNumber } from './calculations'
+import { DEFAULT_INPUTS, MAX_401K_CONTRIBUTION, STORAGE_KEY, TAX_RATE_MARRIED, TAX_RATE_SINGLE } from './constants'
 import FrequencyInput from './components/FrequencyInput'
 import InvestmentInputs from './components/InvestmentInputs'
 import NumberInput from './components/NumberInput'
+import AffordabilityInputs from './components/AffordabilityInputs'
 import DownPaymentAdvice from './components/DownPaymentAdvice'
 import MarketRace from './components/MarketRace'
 import ScenarioCard from './components/ScenarioCard'
@@ -78,47 +79,21 @@ function App() {
     }))
   }
 
-  const primaryAnnualIncome =
-    toNumber(inputs.primarySalary) +
-    getAnnualPassive(inputs.primaryPassive, inputs.primaryPassiveFrequency) +
-    (inputs.incomeMode === 'net' ? getInvestmentAnnualReturn(inputs, 'primary') : 0)
-
-  const partnerAnnualIncome =
-    toNumber(inputs.partnerSalary) +
-    getAnnualPassive(inputs.partnerPassive, inputs.partnerPassiveFrequency) +
-    (inputs.incomeMode === 'net' ? getInvestmentAnnualReturn(inputs, 'partner') : 0)
+  const primaryAnnualIncome = getAnnualIncome(inputs, 'primary')
+  const partnerAnnualIncome = getAnnualIncome(inputs, 'partner')
 
   const primary401kDeduction = toNumber(inputs.primary401kContribution)
   const partner401kDeduction = toNumber(inputs.partner401kContribution)
 
-  // Liquid savings available for a down payment (HYSA + Stocks + Savings balances)
-  const primaryLiquidSavings =
-    toNumber(inputs.primaryHysaBalance) +
-    toNumber(inputs.primaryStocksBalance) +
-    toNumber(inputs.primarySavingsBalance)
-  const partnerLiquidSavings = inputs.includePartner
-    ? toNumber(inputs.partnerHysaBalance) +
-      toNumber(inputs.partnerStocksBalance) +
-      toNumber(inputs.partnerSavingsBalance)
-    : 0
-  const totalLiquidSavings = primaryLiquidSavings + partnerLiquidSavings
+  const totalLiquidSavings =
+    getLiquidSavings(inputs, 'primary') +
+    (inputs.includePartner ? getLiquidSavings(inputs, 'partner') : 0)
 
-  // Total portfolio across ALL investment accounts (including CDs, ESPP) for market race
-  const primaryPortfolioBalance = INVESTMENT_ACCOUNTS.reduce(
-    (sum, { key }) => sum + toNumber(inputs[`primary${key}Balance`]), 0,
-  )
-  const partnerPortfolioBalance = inputs.includePartner
-    ? INVESTMENT_ACCOUNTS.reduce((sum, { key }) => sum + toNumber(inputs[`partner${key}Balance`]), 0)
-    : 0
-  const totalPortfolio = primaryPortfolioBalance + partnerPortfolioBalance
+  const totalPortfolio =
+    getPortfolioBalance(inputs, 'primary') +
+    (inputs.includePartner ? getPortfolioBalance(inputs, 'partner') : 0)
 
-  // Weighted return rate combined across primary (and partner if included)
-  const primaryReturnRate = getWeightedReturnRate(inputs, 'primary')
-  const partnerReturnRate = getWeightedReturnRate(inputs, 'partner')
-  const portfolioReturnRate =
-    totalPortfolio > 0
-      ? (primaryReturnRate * primaryPortfolioBalance + (inputs.includePartner ? partnerReturnRate * partnerPortfolioBalance : 0)) / totalPortfolio
-      : primaryReturnRate
+  const portfolioReturnRate = getCombinedPortfolioReturnRate(inputs)
 
   const soloScenario = useMemo(
     () => calculateScenario(primaryAnnualIncome, inputs, primary401kDeduction),
@@ -196,13 +171,7 @@ function App() {
               <span className="retirement-match">
                 Employer adds{' '}
                 <strong>
-                  {currency.format(
-                    Math.min(
-                      toNumber(inputs.primary401kContribution) * (toNumber(inputs.primary401kMatchPercent) / 100),
-                      toNumber(inputs.primarySalary) * 0.06,
-                    ),
-                  )}
-                  /yr
+                  {currency.format(getEmployerMatch(inputs.primary401kContribution, inputs.primary401kMatchPercent, inputs.primarySalary))}/yr
                 </strong>
               </span>
             </div>
@@ -270,13 +239,7 @@ function App() {
                 <span className="retirement-match">
                   Employer adds{' '}
                   <strong>
-                    {currency.format(
-                      Math.min(
-                        toNumber(inputs.partner401kContribution) * (toNumber(inputs.partner401kMatchPercent) / 100),
-                        toNumber(inputs.partnerSalary) * 0.06,
-                      ),
-                    )}
-                    /yr
+                    {currency.format(getEmployerMatch(inputs.partner401kContribution, inputs.partner401kMatchPercent, inputs.partnerSalary))}/yr
                   </strong>
                 </span>
               </div>
@@ -338,58 +301,7 @@ function App() {
         )}
       </div>
 
-      <section className="panel">
-        <h2>Affordability Inputs</h2>
-        <div className="grid three-col">
-          <label className="field">
-            <span>Credit score range</span>
-            <select value={inputs.creditBand} onChange={(event) => update('creditBand')(event.target.value)}>
-              {CREDIT_SCORE_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <NumberInput
-            label="Mortgage rate (%)"
-            value={inputs.mortgageRate}
-            onChange={update('mortgageRate')}
-            step="0.01"
-            hint="Default set to current HI average"
-          />
-          <NumberInput
-            label="Monthly non-housing debt"
-            value={inputs.monthlyDebts}
-            onChange={update('monthlyDebts')}
-            tooltip="Car loans, student loans, min. credit card payments. Not groceries or general living expenses."
-          />
-          <NumberInput
-            label="Monthly HOA"
-            value={inputs.monthlyHoa}
-            onChange={update('monthlyHoa')}
-          />
-          <NumberInput
-            label="Monthly home insurance"
-            value={inputs.monthlyInsurance}
-            onChange={update('monthlyInsurance')}
-          />
-          <NumberInput
-            label="Property tax rate (%)"
-            value={inputs.propertyTaxRate}
-            onChange={update('propertyTaxRate')}
-            step="0.01"
-            hint="Honolulu average is ~0.28%"
-          />
-          <NumberInput
-            label="High cost-of-living adjustment (%)"
-            value={inputs.costOfLivingAdjustment}
-            onChange={update('costOfLivingAdjustment')}
-            step="0.1"
-            hint="Applied as a housing budget reduction"
-          />
-        </div>
-      </section>
+      <AffordabilityInputs inputs={inputs} update={update} />
 
       <section className="results-grid" aria-live="polite">
         <ScenarioCard title="Solo Income" scenario={soloScenario} />

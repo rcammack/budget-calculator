@@ -1,26 +1,14 @@
-import { currency } from '../calculations'
-import { toNumber } from '../calculations'
+import { currency, calculateDownPaymentStrategy } from '../calculations'
 
 const DownPaymentAdvice = ({ inputs, recommendedHomePrice, liquidSavings }) => {
-  const twentyPctDown = recommendedHomePrice * 0.2
-  const excess = liquidSavings - twentyPctDown
-
   if (liquidSavings <= 0 || recommendedHomePrice <= 0) return null
 
-  const mortgageRate  = toNumber(inputs.mortgageRate)
-  const stockRate     = toNumber(inputs.primaryStocksRate)
-  const hysaRate      = toNumber(inputs.primaryHysaRate)
-
-  // Opportunity cost: investing the excess vs. paying down extra mortgage principal
-  // Simplified: extra principal reduction saves ~mortgageRate% per year in interest
-  const annualMortgageSaving = Math.max(excess, 0) * (mortgageRate / 100)
-  const annualStockReturn    = Math.max(excess, 0) * (stockRate / 100)
-  const annualHysaReturn     = Math.max(excess, 0) * (hysaRate / 100)
-
-  const stockBeatsMortgage = stockRate > mortgageRate
-  const hysaBeatsMortgage  = hysaRate  > mortgageRate
-
-  const canCover20Pct = liquidSavings >= twentyPctDown
+  const {
+    twentyPctDown, excess, canCover20Pct,
+    annualMortgageSaving, annualStockReturn, annualHysaReturn,
+    stockBeatsMortgage, hysaBeatsMortgage,
+    mortgageRate, stockRate, hysaRate,
+  } = calculateDownPaymentStrategy(recommendedHomePrice, liquidSavings, inputs)
 
   return (
     <div className="dp-advice">

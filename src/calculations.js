@@ -18,42 +18,91 @@ export const toNumber = (value) => {
 export const getAnnualPassive = (amount, frequency) =>
   frequency === 'monthly' ? toNumber(amount) * 12 : toNumber(amount)
 
+// Return from a single investment account (handles ESPP discount math).
+export const getAccountReturn = (balance, rate, type) => {
+  if (type === 'espp') {
+    const sharesValue = balance / (1 - ESPP_DISCOUNT)
+    return (sharesValue - balance) + sharesValue * (rate / 100)
+  }
+  return balance * (rate / 100)
+}
+
 export const getInvestmentAnnualReturn = (inputs, prefix) =>
   INVESTMENT_ACCOUNTS.reduce((total, { key, type }) => {
     const balance = toNumber(inputs[`${prefix}${key}Balance`])
     const rate = toNumber(inputs[`${prefix}${key}Rate`])
-    if (type === 'espp') {
-      // contribution buys stock at a discount; gain = discount benefit + stock appreciation on shares received
-      const sharesValue = balance / (1 - ESPP_DISCOUNT)
-      const discountGain = sharesValue - balance
-      const appreciationGain = sharesValue * (rate / 100)
-      return total + discountGain + appreciationGain
-    }
-    return total + balance * (rate / 100)
+    return total + getAccountReturn(balance, rate, type)
   }, 0)
+
+// Sum of liquid savings accounts (HYSA + Stocks + Savings) for a given prefix.
+export const getLiquidSavings = (inputs, prefix) =>
+  toNumber(inputs[`${prefix}HysaBalance`]) +
+  toNumber(inputs[`${prefix}StocksBalance`]) +
+  toNumber(inputs[`${prefix}SavingsBalance`])
+
+// Total balance across ALL investment accounts for a given prefix.
+export const getPortfolioBalance = (inputs, prefix) =>
+  INVESTMENT_ACCOUNTS.reduce((sum, { key }) => sum + toNumber(inputs[`${prefix}${key}Balance`]), 0)
+
+// Employer 401k match, capped at 6% of salary (IRS safe harbor).
+export const getEmployerMatch = (contribution, matchPercent, salary) =>
+  Math.min(toNumber(contribution) * (toNumber(matchPercent) / 100), toNumber(salary) * 0.06)
+
+// Total annual income for a prefix: salary + passive + investment returns (net mode only).
+export const getAnnualIncome = (inputs, prefix) =>
+  toNumber(inputs[`${prefix}Salary`]) +
+  getAnnualPassive(inputs[`${prefix}Passive`], inputs[`${prefix}PassiveFrequency`]) +
+  (inputs.incomeMode === 'net' ? getInvestmentAnnualReturn(inputs, prefix) : 0)
 
 // Weighted average annual return rate across all investment accounts for a given prefix.
 // Falls back to the stocks rate if total balance is zero.
 export const getWeightedReturnRate = (inputs, prefix) => {
-  const totalBalance = INVESTMENT_ACCOUNTS.reduce(
-    (sum, { key }) => sum + toNumber(inputs[`${prefix}${key}Balance`]),
-    0,
-  )
+  const totalBalance = getPortfolioBalance(inputs, prefix)
   if (!totalBalance) return toNumber(inputs[`${prefix}StocksRate`])
 
   const weightedSum = INVESTMENT_ACCOUNTS.reduce((sum, { key, type }) => {
     const balance = toNumber(inputs[`${prefix}${key}Balance`])
     if (!balance) return sum
     const rate = toNumber(inputs[`${prefix}${key}Rate`])
-    if (type === 'espp') {
-      const sharesValue = balance / (1 - ESPP_DISCOUNT)
-      const effectiveRate = ((sharesValue - balance + sharesValue * (rate / 100)) / balance) * 100
-      return sum + balance * effectiveRate
-    }
-    return sum + balance * rate
+    const effectiveRate = getAccountReturn(balance, rate, type) / balance * 100
+    return sum + balance * effectiveRate
   }, 0)
 
   return weightedSum / totalBalance
+}
+
+// Combined weighted return rate across primary + partner (if included).
+export const getCombinedPortfolioReturnRate = (inputs) => {
+  const primaryBalance = getPortfolioBalance(inputs, 'primary')
+  const partnerBalance = inputs.includePartner ? getPortfolioBalance(inputs, 'partner') : 0
+  const total = primaryBalance + partnerBalance
+  if (!total) return getWeightedReturnRate(inputs, 'primary')
+  const primaryRate = getWeightedReturnRate(inputs, 'primary')
+  const partnerRate = inputs.includePartner ? getWeightedReturnRate(inputs, 'partner') : 0
+  return (primaryRate * primaryBalance + partnerRate * partnerBalance) / total
+}
+
+// Down payment strategy: how much to put down vs. keep invested.
+export const calculateDownPaymentStrategy = (recommendedHomePrice, liquidSavings, inputs) => {
+  const twentyPctDown = recommendedHomePrice * 0.2
+  const excess = liquidSavings - twentyPctDown
+  const mortgageRate = toNumber(inputs.mortgageRate)
+  const stockRate = toNumber(inputs.primaryStocksRate)
+  const hysaRate = toNumber(inputs.primaryHysaRate)
+  const investableExcess = Math.max(excess, 0)
+  return {
+    twentyPctDown,
+    excess,
+    canCover20Pct: liquidSavings >= twentyPctDown,
+    annualMortgageSaving: investableExcess * (mortgageRate / 100),
+    annualStockReturn: investableExcess * (stockRate / 100),
+    annualHysaReturn: investableExcess * (hysaRate / 100),
+    stockBeatsMortgage: stockRate > mortgageRate,
+    hysaBeatsMortgage: hysaRate > mortgageRate,
+    mortgageRate,
+    stockRate,
+    hysaRate,
+  }
 }
 
 // Project portfolio value and required 20% down payment year by year.

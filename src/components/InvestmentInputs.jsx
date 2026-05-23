@@ -1,19 +1,12 @@
-import { currency } from '../calculations'
-import { INVESTMENT_ACCOUNTS, ESPP_DISCOUNT } from '../constants'
+import { currency, getAccountReturn } from '../calculations'
+import { INVESTMENT_ACCOUNTS } from '../constants'
 import NumberInput from './NumberInput'
 
 const InvestmentInputs = ({ prefix, inputs, update }) => {
   const rows = INVESTMENT_ACCOUNTS.map(({ key, label, type }) => {
     const balance = Number(inputs[`${prefix}${key}Balance`]) || 0
     const rate = Number(inputs[`${prefix}${key}Rate`]) || 0
-    let annualReturn
-    if (type === 'espp') {
-      const sharesValue = balance / (1 - ESPP_DISCOUNT)
-      annualReturn = (sharesValue - balance) + sharesValue * (rate / 100)
-    } else {
-      annualReturn = balance * (rate / 100)
-    }
-    return { key, label, type, balance, rate, annualReturn }
+    return { key, label, type, balance, rate, annualReturn: getAccountReturn(balance, rate, type) }
   })
 
   const totalAnnualReturn = rows.reduce((sum, r) => sum + r.annualReturn, 0)
