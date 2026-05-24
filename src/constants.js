@@ -1,4 +1,5 @@
 export const STORAGE_KEY = 'home-affordability-calculator-inputs-v1'
+export const SPENDING_STORAGE_KEY = 'budget-spending-items-v1'
 
 export const MAX_401K_CONTRIBUTION = 23500  // 2025 IRS limit (under age 50)
 
@@ -26,6 +27,12 @@ export const INVESTMENT_ACCOUNTS = [
 ]
 
 export const ESPP_DISCOUNT = 0.10
+
+export const DEFAULT_SPENDING_ITEMS = [
+  { id: '1', name: 'Groceries', amount: 600, frequency: 'monthly' },
+  { id: '2', name: 'Car payment', amount: 400, frequency: 'monthly' },
+  { id: '3', name: 'Utilities', amount: 200, frequency: 'monthly' },
+]
 
 export const DEFAULT_INPUTS = {
   incomeMode: 'net',

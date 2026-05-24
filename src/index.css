@@ -48,6 +48,10 @@
   --tbtn-active-color: #ffffff;
   --tbtn-active-border: rgba(255, 255, 255, 0.7);
   --tbtn-active-shadow: none;
+
+  --chart-housing:  #2563eb;
+  --chart-spending: #ea580c;
+  --chart-leftover: #94a3b8;
 }
 
 /* ── Retro Neon (dark) ─────────────────────────────────────────── */
@@ -100,6 +104,10 @@
   --tbtn-active-color: #ff3db5;
   --tbtn-active-border: #ff3db5;
   --tbtn-active-shadow: 0 0 10px rgba(255, 61, 181, 0.6);
+
+  --chart-housing:  #ff3db5;
+  --chart-spending: #ffe44d;
+  --chart-leftover: #2a1a38;
 }
 
 /* ── High Contrast ─────────────────────────────────────────────── */
@@ -146,6 +154,10 @@
   --tbtn-active-color: #000000;
   --tbtn-active-border: #ffffff;
   --tbtn-active-shadow: none;
+
+  --chart-housing:  #000000;
+  --chart-spending: #555555;
+  --chart-leftover: #cccccc;
 }
 
 /* ── Base styles ───────────────────────────────────────────────── */

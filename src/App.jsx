@@ -1,14 +1,16 @@
 import { useEffect, useMemo, useState } from 'react'
 import './App.css'
 import { calculateScenario, currency, getAnnualIncome, getCombinedPortfolioReturnRate, getEmployerMatch, getLiquidSavings, getPortfolioBalance, toNumber } from './calculations'
-import { DEFAULT_INPUTS, MAX_401K_CONTRIBUTION, STORAGE_KEY, TAX_RATE_MARRIED, TAX_RATE_SINGLE } from './constants'
+import { DEFAULT_INPUTS, DEFAULT_SPENDING_ITEMS, MAX_401K_CONTRIBUTION, SPENDING_STORAGE_KEY, STORAGE_KEY, TAX_RATE_MARRIED, TAX_RATE_SINGLE } from './constants'
 import FrequencyInput from './components/FrequencyInput'
 import InvestmentInputs from './components/InvestmentInputs'
 import NumberInput from './components/NumberInput'
 import AffordabilityInputs from './components/AffordabilityInputs'
+import BudgetChart from './components/BudgetChart'
 import DownPaymentAdvice from './components/DownPaymentAdvice'
 import MarketRace from './components/MarketRace'
 import ScenarioCard from './components/ScenarioCard'
+import SpendingInputs from './components/SpendingInputs'
 
 function App() {
   const [inputs, setInputs] = useState(() => {
@@ -29,6 +31,19 @@ function App() {
     document.documentElement.setAttribute('data-theme', saved)
     return saved
   })
+
+  const [spendingItems, setSpendingItems] = useState(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(SPENDING_STORAGE_KEY) || 'null')
+      return saved ?? DEFAULT_SPENDING_ITEMS
+    } catch {
+      return DEFAULT_SPENDING_ITEMS
+    }
+  })
+
+  useEffect(() => {
+    localStorage.setItem(SPENDING_STORAGE_KEY, JSON.stringify(spendingItems))
+  }, [spendingItems])
 
   useEffect(() => {
     fetch(`${import.meta.env.BASE_URL}market-data.json`)
@@ -107,6 +122,16 @@ function App() {
         : null,
     [inputs, partnerAnnualIncome, primaryAnnualIncome, primary401kDeduction, partner401kDeduction],
   )
+
+  const monthlySpending = spendingItems.reduce((sum, item) => {
+    const amount = item.amount || 0
+    return sum + (item.frequency === 'annual' ? amount / 12 : amount)
+  }, 0)
+
+  // Monthly net take-home (post-tax, post-401k) for the active scenario
+  const activeScenario = combinedScenario ?? soloScenario
+  const monthlyTakeHome = activeScenario ? activeScenario.effectiveMonthlyIncome : 0
+  const monthlyHousing = activeScenario ? activeScenario.recommendedOption.monthlyTotalHousing : 0
 
   return (
     <main className="app-shell">
@@ -296,12 +321,24 @@ function App() {
 
       <AffordabilityInputs inputs={inputs} update={update} />
 
+      {inputs.incomeMode === 'net' && (
+        <SpendingInputs items={spendingItems} onChange={setSpendingItems} />
+      )}
+
       <section className="results-grid" aria-live="polite">
         <ScenarioCard title="Solo Income" scenario={soloScenario} />
         {inputs.includePartner && (
           <ScenarioCard title="Combined Income" scenario={combinedScenario} />
         )}
       </section>
+
+      {inputs.incomeMode === 'net' && (
+        <BudgetChart
+          monthlyTakeHome={monthlyTakeHome}
+          monthlyHousing={monthlyHousing}
+          monthlySpending={monthlySpending}
+        />
+      )}
 
       {inputs.incomeMode === 'net' && (
         <section className="panel">
