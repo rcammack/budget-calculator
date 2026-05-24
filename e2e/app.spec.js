@@ -245,20 +245,19 @@ test.describe('Home Affordability Calculator', () => {
     expect(after).not.toBe(before)
   })
 
-  test('increasing annual savings contribution reduces the gap over time', async ({ page }) => {
-    const getYear10Gap = async () => {
-      const rows = page.locator('.race-row')
-      return rows.last().locator('.race-gap').textContent()
+  test('annual contribution display changes when salary changes', async ({ page }) => {
+    const getSavingsText = async () => {
+      return page.locator('.race-savings-value').textContent()
     }
 
-    const gapBefore = await getYear10Gap()
+    const before = await getSavingsText()
 
-    await page.getByLabel('Additional annual savings ($)').fill('100000')
-    await page.getByLabel('Additional annual savings ($)').blur()
+    await page.getByLabel('Primary annual salary').fill('250000')
+    await page.getByLabel('Primary annual salary').blur()
     await page.waitForTimeout(100)
 
-    const gapAfter = await getYear10Gap()
-    expect(gapAfter).not.toBe(gapBefore)
+    const after = await getSavingsText()
+    expect(after).not.toBe(before)
   })
 
   test('shows gap-closing verdict when portfolio return rate exceeds housing appreciation', async ({ page }) => {

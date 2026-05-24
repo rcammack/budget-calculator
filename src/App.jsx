@@ -132,6 +132,7 @@ function App() {
   const activeScenario = combinedScenario ?? soloScenario
   const monthlyTakeHome = activeScenario ? activeScenario.effectiveMonthlyIncome : 0
   const monthlyHousing = activeScenario ? activeScenario.recommendedOption.monthlyTotalHousing : 0
+  const annualInvestable = Math.max(monthlyTakeHome - monthlySpending, 0) * 12
 
   return (
     <main className="app-shell">
@@ -162,13 +163,6 @@ function App() {
               value={inputs.primarySalary}
               onChange={update('primarySalary')}
             />
-            <FrequencyInput
-              label="Primary passive income"
-              amount={inputs.primaryPassive}
-              frequency={inputs.primaryPassiveFrequency}
-              onAmountChange={update('primaryPassive')}
-              onFrequencyChange={update('primaryPassiveFrequency')}
-            />
           </div>
 
           <div className="retirement-section">
@@ -189,7 +183,7 @@ function App() {
               <span className="retirement-match">
                 Employer adds{' '}
                 <strong>
-                  {currency.format(getEmployerMatch(inputs.primary401kContribution, inputs.primary401kMatchPercent, inputs.primarySalary))}/yr
+                  {currency.format(getEmployerMatch(inputs.primary401kContribution, inputs.primary401kMatchPercent))}/yr
                 </strong>
               </span>
             </div>
@@ -230,13 +224,6 @@ function App() {
                 value={inputs.partnerSalary}
                 onChange={update('partnerSalary')}
               />
-              <FrequencyInput
-                label="Partner passive income"
-                amount={inputs.partnerPassive}
-                frequency={inputs.partnerPassiveFrequency}
-                onAmountChange={update('partnerPassive')}
-                onFrequencyChange={update('partnerPassiveFrequency')}
-              />
             </div>
 
             <div className="retirement-section">
@@ -257,7 +244,7 @@ function App() {
                 <span className="retirement-match">
                   Employer adds{' '}
                   <strong>
-                    {currency.format(getEmployerMatch(inputs.partner401kContribution, inputs.partner401kMatchPercent, inputs.partnerSalary))}/yr
+                    {currency.format(getEmployerMatch(inputs.partner401kContribution, inputs.partner401kMatchPercent))}/yr
                   </strong>
                 </span>
               </div>
@@ -313,8 +300,7 @@ function App() {
 
         {inputs.incomeMode === 'gross' && (
           <p className="mode-note">
-            Uses 28/36 rule on gross income. Counts salary and passive income only —
-            investment returns are excluded as lenders require a 2-year documented history.
+            Uses 28/36 rule on gross income. Investment returns are excluded as lenders require a 2-year documented history.
           </p>
         )}
       </div>
@@ -359,6 +345,7 @@ function App() {
             update={update}
             currentPortfolio={totalPortfolio}
             portfolioReturnRate={portfolioReturnRate}
+            annualContribution={annualInvestable}
           />
         </section>
       )}

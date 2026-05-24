@@ -1,10 +1,9 @@
 import { currency, projectMarketRace, toNumber } from '../calculations'
 import NumberInput from './NumberInput'
 
-const MarketRace = ({ inputs, update, currentPortfolio, portfolioReturnRate }) => {
+const MarketRace = ({ inputs, update, currentPortfolio, portfolioReturnRate, annualContribution }) => {
   const targetHomePrice       = toNumber(inputs.targetHomePrice)
   const housingAppreciationRate = toNumber(inputs.housingAppreciationRate)
-  const annualContribution    = toNumber(inputs.annualSavingsContribution)
 
   const projection = projectMarketRace({
     currentPortfolio,
@@ -46,12 +45,11 @@ const MarketRace = ({ inputs, update, currentPortfolio, portfolioReturnRate }) =
           step="0.1"
           hint="Oahu historical avg ~5%/yr"
         />
-        <NumberInput
-          label="Additional annual savings ($)"
-          value={inputs.annualSavingsContribution}
-          onChange={update('annualSavingsContribution')}
-          hint="New money added to investments each year"
-        />
+        <div className="field">
+          <span className="race-savings-hint">Annual investable income</span>
+          <strong className="race-savings-value">{currency.format(annualContribution)}/yr</strong>
+          <span className="race-savings-sub">take-home minus spending (add rent to spending panel)</span>
+        </div>
       </div>
 
       <div className="market-race-stats">

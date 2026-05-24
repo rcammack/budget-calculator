@@ -1,9 +1,18 @@
 import { describe, expect, it } from 'vitest'
-import { calculateScenario, getAnnualPassive, getInvestmentAnnualReturn, getWeightedReturnRate, projectMarketRace, toNumber } from './calculations'
+import { calculateScenario, getInvestmentAnnualReturn, getWeightedReturnRate, projectMarketRace, toNumber } from './calculations'
 import { DEFAULT_INPUTS } from './constants'
 
-const GROSS_INPUTS = { ...DEFAULT_INPUTS, incomeMode: 'gross' }
-const NET_INPUTS   = { ...DEFAULT_INPUTS, incomeMode: 'net', effectiveTaxRate: 30 }
+// Zero-balance variant for tests that need clean investment state
+const ZERO_INPUTS = {
+  ...DEFAULT_INPUTS,
+  primaryHysaBalance: 0, primaryCdBalance: 0, primaryStocksBalance: 0,
+  primarySavingsBalance: 0, primaryEsppBalance: 0,
+  partnerHysaBalance: 0, partnerCdBalance: 0, partnerStocksBalance: 0,
+  partnerSavingsBalance: 0, partnerEsppBalance: 0,
+}
+
+const GROSS_INPUTS = { ...ZERO_INPUTS, incomeMode: 'gross' }
+const NET_INPUTS   = { ...ZERO_INPUTS, incomeMode: 'net', effectiveTaxRate: 30 }
 
 describe('toNumber', () => {
   it('converts a valid string to a number', () => {
@@ -21,30 +30,21 @@ describe('toNumber', () => {
   })
 })
 
-describe('getAnnualPassive', () => {
-  it('multiplies by 12 for monthly frequency', () => {
-    expect(getAnnualPassive(500, 'monthly')).toBe(6000)
-  })
-
-  it('returns the value as-is for annual frequency', () => {
-    expect(getAnnualPassive(6000, 'annual')).toBe(6000)
-  })
-})
 
 describe('getInvestmentAnnualReturn', () => {
   it('returns 0 when all balances are 0', () => {
-    expect(getInvestmentAnnualReturn(DEFAULT_INPUTS, 'primary')).toBe(0)
+    expect(getInvestmentAnnualReturn(ZERO_INPUTS, 'primary')).toBe(0)
   })
 
   it('calculates standard account return correctly', () => {
-    const inputs = { ...DEFAULT_INPUTS, primaryHysaBalance: 10000, primaryHysaRate: 5 }
+    const inputs = { ...ZERO_INPUTS, primaryHysaBalance: 10000, primaryHysaRate: 5 }
     // $10,000 * 5% = $500
     expect(getInvestmentAnnualReturn(inputs, 'primary')).toBe(500)
   })
 
   it('sums multiple account returns', () => {
     const inputs = {
-      ...DEFAULT_INPUTS,
+      ...ZERO_INPUTS,
       primaryHysaBalance: 10000, primaryHysaRate: 5,   // $500
       primaryCdBalance:   20000, primaryCdRate:   4,   // $800
     }
@@ -53,21 +53,21 @@ describe('getInvestmentAnnualReturn', () => {
 
   it('calculates ESPP return using discount, ignoring stock appreciation when rate is 0', () => {
     // $9,000 contribution at 10% discount → buys $10,000 of stock → gain = $1,000
-    const inputs = { ...DEFAULT_INPUTS, primaryEsppBalance: 9000, primaryEsppRate: 0 }
+    const inputs = { ...ZERO_INPUTS, primaryEsppBalance: 9000, primaryEsppRate: 0 }
     const result = getInvestmentAnnualReturn(inputs, 'primary')
     expect(result).toBeCloseTo(1000, 0)
   })
 
   it('adds stock appreciation on top of ESPP discount gain', () => {
     // $9,000 contribution → $10,000 shares; 10% stock appreciation = $1,000 extra
-    const inputs = { ...DEFAULT_INPUTS, primaryEsppBalance: 9000, primaryEsppRate: 10 }
+    const inputs = { ...ZERO_INPUTS, primaryEsppBalance: 9000, primaryEsppRate: 10 }
     const result = getInvestmentAnnualReturn(inputs, 'primary')
     // discount gain $1,000 + appreciation $1,000 = $2,000
     expect(result).toBeCloseTo(2000, 0)
   })
 
   it('uses the correct prefix for partner accounts', () => {
-    const inputs = { ...DEFAULT_INPUTS, partnerHysaBalance: 5000, partnerHysaRate: 4 }
+    const inputs = { ...ZERO_INPUTS, partnerHysaBalance: 5000, partnerHysaRate: 4 }
     expect(getInvestmentAnnualReturn(inputs, 'partner')).toBe(200)
     expect(getInvestmentAnnualReturn(inputs, 'primary')).toBe(0)
   })
@@ -166,20 +166,20 @@ describe('calculateScenario', () => {
 
 describe('getWeightedReturnRate', () => {
   it('falls back to stocks rate when all balances are zero', () => {
-    const inputs = { ...DEFAULT_INPUTS, primaryStocksRate: 7 }
+    const inputs = { ...ZERO_INPUTS, primaryStocksRate: 7 }
     expect(getWeightedReturnRate(inputs, 'primary')).toBe(7)
   })
 
   it('returns the single account rate when only one account has a balance', () => {
-    const inputs = { ...DEFAULT_INPUTS, primaryHysaBalance: 50000, primaryHysaRate: 5 }
+    const inputs = { ...ZERO_INPUTS, primaryHysaBalance: 50000, primaryHysaRate: 5 }
     expect(getWeightedReturnRate(inputs, 'primary')).toBeCloseTo(5, 5)
   })
 
   it('returns weighted average across multiple accounts', () => {
     const inputs = {
-      ...DEFAULT_INPUTS,
-      primaryHysaBalance: 100000, primaryHysaRate: 5,   // weight 100k @ 5%
-      primaryStocksBalance: 100000, primaryStocksRate: 9, // weight 100k @ 9%
+      ...ZERO_INPUTS,
+      primaryHysaBalance: 100000, primaryHysaRate: 5,
+      primaryStocksBalance: 100000, primaryStocksRate: 9,
     }
     // Weighted avg = (100k*5 + 100k*9) / 200k = 7
     expect(getWeightedReturnRate(inputs, 'primary')).toBeCloseTo(7, 5)
@@ -187,29 +187,27 @@ describe('getWeightedReturnRate', () => {
 
   it('weights proportionally when balances are unequal', () => {
     const inputs = {
-      ...DEFAULT_INPUTS,
-      primaryHysaBalance: 25000, primaryHysaRate: 4,    // 25%  weight
-      primaryStocksBalance: 75000, primaryStocksRate: 8, // 75% weight
+      ...ZERO_INPUTS,
+      primaryHysaBalance: 25000, primaryHysaRate: 4,
+      primaryStocksBalance: 75000, primaryStocksRate: 8,
     }
-    // (25k*4 + 75k*8) / 100k = (100 + 600) / 100 = 7
+    // (25k*4 + 75k*8) / 100k = 7
     expect(getWeightedReturnRate(inputs, 'primary')).toBeCloseTo(7, 5)
   })
 
   it('uses ESPP effective rate (discount + appreciation) in weighting', () => {
-    // $9,000 ESPP contribution buys $10,000 of stock (10% discount)
-    // With 0% stock appreciation: effective rate = 1000/9000 * 100 ≈ 11.11%
-    const inputs = { ...DEFAULT_INPUTS, primaryEsppBalance: 9000, primaryEsppRate: 0 }
+    const inputs = { ...ZERO_INPUTS, primaryEsppBalance: 9000, primaryEsppRate: 0 }
     const rate = getWeightedReturnRate(inputs, 'primary')
     expect(rate).toBeCloseTo(11.11, 1)
   })
 
   it('uses the correct prefix — partner balances do not affect primary rate', () => {
     const inputs = {
-      ...DEFAULT_INPUTS,
+      ...ZERO_INPUTS,
       partnerHysaBalance: 100000, partnerHysaRate: 5,
       primaryStocksRate: 7,
     }
-    expect(getWeightedReturnRate(inputs, 'primary')).toBe(7) // falls back to stocks rate
+    expect(getWeightedReturnRate(inputs, 'primary')).toBe(7)
     expect(getWeightedReturnRate(inputs, 'partner')).toBeCloseTo(5, 5)
   })
 })

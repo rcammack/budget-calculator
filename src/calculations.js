@@ -15,9 +15,6 @@ export const toNumber = (value) => {
   return Number.isFinite(number) ? Math.max(number, 0) : 0
 }
 
-export const getAnnualPassive = (amount, frequency) =>
-  frequency === 'monthly' ? toNumber(amount) * 12 : toNumber(amount)
-
 // Return from a single investment account (handles ESPP discount math).
 export const getAccountReturn = (balance, rate, type) => {
   if (type === 'espp') {
@@ -44,14 +41,13 @@ export const getLiquidSavings = (inputs, prefix) =>
 export const getPortfolioBalance = (inputs, prefix) =>
   INVESTMENT_ACCOUNTS.reduce((sum, { key }) => sum + toNumber(inputs[`${prefix}${key}Balance`]), 0)
 
-// Employer 401k match, capped at 6% of salary (IRS safe harbor).
-export const getEmployerMatch = (contribution, matchPercent, salary) =>
-  Math.min(toNumber(contribution) * (toNumber(matchPercent) / 100), toNumber(salary) * 0.06)
+// Employer 401k match — flat percentage of employee contribution, no salary cap.
+export const getEmployerMatch = (contribution, matchPercent) =>
+  toNumber(contribution) * (toNumber(matchPercent) / 100)
 
-// Total annual income for a prefix: salary + passive + investment returns (net mode only).
+// Total annual income for a prefix: salary + investment returns (net mode only).
 export const getAnnualIncome = (inputs, prefix) =>
   toNumber(inputs[`${prefix}Salary`]) +
-  getAnnualPassive(inputs[`${prefix}Passive`], inputs[`${prefix}PassiveFrequency`]) +
   (inputs.incomeMode === 'net' ? getInvestmentAnnualReturn(inputs, prefix) : 0)
 
 // Weighted average annual return rate across all investment accounts for a given prefix.
