@@ -16,7 +16,7 @@ function describeArc(cx, cy, r, startAngle, endAngle) {
   return `M ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2}`
 }
 
-export default function BudgetChart({ monthlyTakeHome, monthlyHousing, monthlySpending }) {
+export default function BudgetChart({ monthlyTakeHome, monthlyHousing, monthlySpending, rentExcluded }) {
   const leftover = Math.max(monthlyTakeHome - monthlyHousing - monthlySpending, 0)
   const total = monthlyTakeHome || 1
 
@@ -52,6 +52,9 @@ export default function BudgetChart({ monthlyTakeHome, monthlyHousing, monthlySp
       <p className="panel-hint">
         Monthly net take-home after tax &amp; 401k: <strong>{currency.format(monthlyTakeHome)}</strong>
         {' '}— how much breathing room does the mortgage leave?
+        {rentExcluded && (
+          <span className="panel-hint-note"> Rent excluded from Spending — Housing already covers it.</span>
+        )}
       </p>
       <div className="budget-chart-body">
         <svg viewBox="0 0 160 160" className="donut-svg" aria-hidden="true">

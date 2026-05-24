@@ -14,6 +14,13 @@ export default function SpendingInputs({ items, onChange }) {
     onChange(items.filter((item) => item.id !== id))
   }
 
+  const totalMonthly = items.reduce((sum, item) => {
+    const amount = Number(item.amount) || 0
+    return sum + (item.frequency === 'annual' ? amount / 12 : amount)
+  }, 0)
+
+  const fmt = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
+
   return (
     <section className="panel">
       <h2>Spending</h2>
@@ -68,6 +75,10 @@ export default function SpendingInputs({ items, onChange }) {
       <button className="add-spending-btn" onClick={addItem} type="button">
         + Add item
       </button>
+      <div className="spending-total">
+        <span>Total per month</span>
+        <strong>{fmt.format(totalMonthly)}/mo</strong>
+      </div>
     </section>
   )
 }

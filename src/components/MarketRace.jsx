@@ -1,9 +1,16 @@
 import { currency, projectMarketRace, toNumber } from '../calculations'
 import NumberInput from './NumberInput'
 
-const MarketRace = ({ inputs, update, currentPortfolio, portfolioReturnRate, annualContribution }) => {
+const MarketRace = ({ inputs, update, currentPortfolio, portfolioReturnRate, annualContribution, monthlyHousingBudget }) => {
   const targetHomePrice       = toNumber(inputs.targetHomePrice)
   const housingAppreciationRate = toNumber(inputs.housingAppreciationRate)
+
+  const mortgageParams = {
+    annualRate: inputs.mortgageRate,
+    propertyTaxRate: inputs.propertyTaxRate,
+    monthlyHoa: inputs.monthlyHoa,
+    monthlyInsurance: inputs.monthlyInsurance,
+  }
 
   const projection = projectMarketRace({
     currentPortfolio,
@@ -11,6 +18,8 @@ const MarketRace = ({ inputs, update, currentPortfolio, portfolioReturnRate, ann
     annualContribution,
     targetHomePrice,
     housingAppreciationRate,
+    monthlyHousingBudget,
+    mortgageParams,
     years: 10,
   })
 
@@ -69,14 +78,14 @@ const MarketRace = ({ inputs, update, currentPortfolio, portfolioReturnRate, ann
         <div className="race-row race-row-header">
           <span></span>
           <span>Portfolio</span>
-          <span>20% Down Needed</span>
+          <span>Down to Afford Monthly</span>
           <span>Gap</span>
         </div>
-        {[now, in5, in10].map(({ year, portfolio, downPaymentNeeded, gap }) => (
+        {[now, in5, in10].map(({ year, portfolio, requiredDown, gap }) => (
           <div key={year} className={`race-row${gap <= 0 ? ' race-row-reached' : ''}`}>
             <span className="race-year">{year === 0 ? 'Today' : `Year ${year}`}</span>
             <span>{currency.format(portfolio)}</span>
-            <span>{currency.format(downPaymentNeeded)}</span>
+            <span>{currency.format(requiredDown)}</span>
             <span className={`race-gap${gap <= 0 ? ' race-gap-met' : gap < gapNow ? ' race-gap-closing' : ' race-gap-widening'}`}>
               {gap <= 0 ? `✓ +${currency.format(Math.abs(gap))}` : `−${currency.format(gap)}`}
             </span>
@@ -88,24 +97,24 @@ const MarketRace = ({ inputs, update, currentPortfolio, portfolioReturnRate, ann
         {isClosing ? (
           breakEven ? (
             <>
-              <strong>✓ Gap is closing.</strong> At these rates you could cover the 20% down payment
-              in approximately <strong>year {breakEven.year}</strong> (
-              {currency.format(breakEven.homePrice)} home,{' '}
-              {currency.format(breakEven.downPaymentNeeded)} down).
+              <strong>✓ Getting more affordable.</strong> At these rates the monthly mortgage payment
+              would fit your budget by approximately <strong>year {breakEven.year}</strong> (
+              {currency.format(breakEven.homePrice)} home, put{' '}
+              {currency.format(breakEven.requiredDown)} down).
             </>
           ) : (
             <>
-              <strong>✓ Gap is closing</strong> by ~{currency.format(gapClosingPerYear)}/yr, but
-              doesn't close within 10 years at these rates.
+              <strong>✓ Trending affordable</strong> — gap closing by ~{currency.format(gapClosingPerYear)}/yr,
+              but doesn't reach affordability within 10 years at these rates.
             </>
           )
         ) : (
           <>
-            <strong>⚠ Gap is widening</strong> by ~{currency.format(Math.abs(gapClosingPerYear))}/yr.
-            The home is appreciating faster than your portfolio —{' '}
+            <strong>⚠ Getting less affordable</strong> — gap widening by ~{currency.format(Math.abs(gapClosingPerYear))}/yr.
+            Home prices are rising faster than your portfolio —{' '}
             {portfolioReturnRate < housingAppreciationRate
               ? `your investment return (${portfolioReturnRate.toFixed(1)}%) is below the housing appreciation rate (${housingAppreciationRate}%).`
-              : 'increasing annual contributions would help close the gap.'}
+              : 'the absolute dollar growth of the home is outpacing your portfolio.'}
           </>
         )}
       </div>

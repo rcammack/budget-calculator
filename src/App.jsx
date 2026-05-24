@@ -128,6 +128,13 @@ function App() {
     return sum + (item.frequency === 'annual' ? amount / 12 : amount)
   }, 0)
 
+  // Rent is excluded from the chart spending slice — the housing slice already covers it
+  const monthlySpendingForChart = spendingItems.reduce((sum, item) => {
+    if (item.name.trim().toLowerCase() === 'rent') return sum
+    const amount = item.amount || 0
+    return sum + (item.frequency === 'annual' ? amount / 12 : amount)
+  }, 0)
+
   // Monthly net take-home (post-tax, post-401k) for the active scenario
   const activeScenario = combinedScenario ?? soloScenario
   const monthlyTakeHome = activeScenario ? activeScenario.effectiveMonthlyIncome : 0
@@ -322,7 +329,8 @@ function App() {
         <BudgetChart
           monthlyTakeHome={monthlyTakeHome}
           monthlyHousing={monthlyHousing}
-          monthlySpending={monthlySpending}
+          monthlySpending={monthlySpendingForChart}
+          rentExcluded={monthlySpending !== monthlySpendingForChart}
         />
       )}
 
@@ -346,6 +354,7 @@ function App() {
             currentPortfolio={totalPortfolio}
             portfolioReturnRate={portfolioReturnRate}
             annualContribution={annualInvestable}
+            monthlyHousingBudget={activeScenario ? activeScenario.adjustedHousingBudget : 0}
           />
         </section>
       )}

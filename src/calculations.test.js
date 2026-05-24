@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { calculateScenario, getInvestmentAnnualReturn, getWeightedReturnRate, projectMarketRace, toNumber } from './calculations'
+import { calculateScenario, getInvestmentAnnualReturn, getRequiredDownPayment, getWeightedReturnRate, projectMarketRace, toNumber } from './calculations'
 import { DEFAULT_INPUTS } from './constants'
 
 // Zero-balance variant for tests that need clean investment state
@@ -212,13 +212,50 @@ describe('getWeightedReturnRate', () => {
   })
 })
 
+describe('getRequiredDownPayment', () => {
+  const ZERO_PARAMS = { annualRate: 0, propertyTaxRate: 0, monthlyHoa: 0, monthlyInsurance: 0 }
+
+  it('returns 0 when budget can fully service the loan with no down payment', () => {
+    // maxLoan = 3000 * 360 = 1,080,000 > 500,000 → no down needed
+    expect(getRequiredDownPayment(500000, 3000, ZERO_PARAMS)).toBe(0)
+  })
+
+  it('returns homePrice - maxLoan when budget cannot cover the full price', () => {
+    // maxLoan = 2000 * 360 = 720,000; requiredDown = 1,000,000 - 720,000 = 280,000
+    expect(getRequiredDownPayment(1000000, 2000, ZERO_PARAMS)).toBeCloseTo(280000, 0)
+  })
+
+  it('returns homePrice when budget cannot cover any payment (fixed costs exceed budget)', () => {
+    const params = { annualRate: 0, propertyTaxRate: 0, monthlyHoa: 5000, monthlyInsurance: 0 }
+    expect(getRequiredDownPayment(500000, 3000, params)).toBe(500000)
+  })
+
+  it('higher monthly budget requires less down payment', () => {
+    const low  = getRequiredDownPayment(800000, 2000, ZERO_PARAMS)
+    const high = getRequiredDownPayment(800000, 3000, ZERO_PARAMS)
+    expect(high).toBeLessThan(low)
+  })
+
+  it('property tax increases required down payment', () => {
+    // homePrice 1M, budget 2500: without tax maxLoan=900k→down=100k; with 1% tax, less goes to P&I→higher down
+    const noTax   = getRequiredDownPayment(1000000, 2500, ZERO_PARAMS)
+    const withTax = getRequiredDownPayment(1000000, 2500, { ...ZERO_PARAMS, propertyTaxRate: 1 })
+    expect(withTax).toBeGreaterThan(noTax)
+  })
+})
+
 describe('projectMarketRace', () => {
+  // Use 0% mortgage rate and no fixed costs so requiredDown math is simple:
+  // maxLoan = monthlyHousingBudget * 360, requiredDown = max(homePrice - maxLoan, 0)
+  const MORTGAGE_PARAMS = { annualRate: 0, propertyTaxRate: 0, monthlyHoa: 0, monthlyInsurance: 0 }
   const BASE = {
     currentPortfolio: 200000,
     portfolioReturnRate: 7,
     annualContribution: 0,
     targetHomePrice: 1000000,
     housingAppreciationRate: 5,
+    monthlyHousingBudget: 2000,  // maxLoan = 720k → requiredDown = 280k
+    mortgageParams: MORTGAGE_PARAMS,
     years: 10,
   }
 
@@ -233,14 +270,13 @@ describe('projectMarketRace', () => {
     const result = projectMarketRace(BASE)
     expect(result[0].portfolio).toBe(200000)
     expect(result[0].homePrice).toBe(1000000)
-    expect(result[0].downPaymentNeeded).toBe(200000)
+    // requiredDown = 1,000,000 - (2000 * 360) = 280,000
+    expect(result[0].requiredDown).toBeCloseTo(280000, 0)
   })
 
   it('portfolio compounds at the portfolio return rate', () => {
     const result = projectMarketRace({ ...BASE, annualContribution: 0 })
-    // Year 1: 200,000 * 1.07 = 214,000
     expect(result[1].portfolio).toBeCloseTo(200000 * 1.07, 0)
-    // Year 10: 200,000 * 1.07^10
     expect(result[10].portfolio).toBeCloseTo(200000 * Math.pow(1.07, 10), 0)
   })
 
@@ -250,21 +286,22 @@ describe('projectMarketRace', () => {
     expect(result[10].homePrice).toBeCloseTo(1000000 * Math.pow(1.05, 10), 0)
   })
 
-  it('gap decreases over time when portfolio rate > housing rate', () => {
-    // 7% portfolio vs 5% housing → gap should close
+  it('requiredDown grows as home price appreciates', () => {
     const result = projectMarketRace(BASE)
-    expect(result[10].gap).toBeLessThan(result[0].gap)
+    // requiredDown = homePrice - 720k; as homePrice grows, so does requiredDown
+    expect(result[10].requiredDown).toBeGreaterThan(result[0].requiredDown)
   })
 
-  it('gap increases over time when portfolio rate < housing rate', () => {
-    const result = projectMarketRace({ ...BASE, portfolioReturnRate: 3, housingAppreciationRate: 7 })
-    expect(result[10].gap).toBeGreaterThan(result[0].gap)
-  })
-
-  it('gap reaches zero (or below) when portfolio already covers 20% down', () => {
-    // Portfolio = 500k, 20% down on 1M home = 200k — already covered
+  it('gap is negative when portfolio exceeds required down', () => {
+    // Portfolio 500k >> requiredDown ~280k → already affordable
     const result = projectMarketRace({ ...BASE, currentPortfolio: 500000 })
     expect(result[0].gap).toBeLessThanOrEqual(0)
+  })
+
+  it('requiredDown is 0 when budget can cover full home price with no down payment', () => {
+    // monthlyHousingBudget = 5000 → maxLoan = 1,800,000 > homePrice → no down needed
+    const result = projectMarketRace({ ...BASE, monthlyHousingBudget: 5000 })
+    expect(result[0].requiredDown).toBe(0)
   })
 
   it('annual contributions accelerate portfolio growth', () => {
@@ -280,15 +317,14 @@ describe('projectMarketRace', () => {
       portfolioReturnRate: 0,
       annualContribution: 10000,
     })
-    // With 0% return, portfolio = contributions * year
     expect(result[5].portfolio).toBeCloseTo(50000, 0)
     expect(result[10].portfolio).toBeCloseTo(100000, 0)
   })
 
-  it('gap field equals downPaymentNeeded minus portfolio', () => {
+  it('gap equals requiredDown minus portfolio', () => {
     const result = projectMarketRace(BASE)
-    result.forEach(({ gap, downPaymentNeeded, portfolio }) => {
-      expect(gap).toBeCloseTo(downPaymentNeeded - portfolio, 0)
+    result.forEach(({ gap, requiredDown, portfolio }) => {
+      expect(gap).toBeCloseTo(requiredDown - portfolio, 0)
     })
   })
 })

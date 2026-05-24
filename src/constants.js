@@ -29,7 +29,6 @@ export const INVESTMENT_ACCOUNTS = [
 export const ESPP_DISCOUNT = 0.10
 
 export const DEFAULT_SPENDING_ITEMS = [
-  { id: '1', name: 'Rent', amount: 1500, frequency: 'monthly' },
   { id: '2', name: 'Groceries', amount: 600, frequency: 'monthly' },
   { id: '3', name: 'Utilities', amount: 200, frequency: 'monthly' },
   { id: '4', name: 'Charity', amount: 10000, frequency: 'annual' },

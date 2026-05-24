@@ -101,13 +101,34 @@ export const calculateDownPaymentStrategy = (recommendedHomePrice, liquidSavings
   }
 }
 
-// Project portfolio value and required 20% down payment year by year.
+// Minimum down payment needed so the monthly payment fits within the housing budget.
+// Inverse of getMaxHomePrice: solves for down amount rather than home price.
+export const getRequiredDownPayment = (homePrice, monthlyHousingBudget, { annualRate, propertyTaxRate, monthlyHoa, monthlyInsurance }) => {
+  const monthlyRate = toNumber(annualRate) / 100 / 12
+  const term = 30 * 12
+  const fixedCosts = toNumber(monthlyHoa) + toNumber(monthlyInsurance)
+  const monthlyTax = homePrice * toNumber(propertyTaxRate) / 100 / 12
+  const paymentForPandI = Math.max(monthlyHousingBudget - fixedCosts - monthlyTax, 0)
+
+  if (!paymentForPandI) return homePrice
+
+  const loanFactor = monthlyRate
+    ? (1 - Math.pow(1 + monthlyRate, -term)) / monthlyRate
+    : term
+
+  const maxLoan = paymentForPandI * loanFactor
+  return Math.max(homePrice - maxLoan, 0)
+}
+
+// Project portfolio value and minimum down needed to afford the monthly mortgage, year by year.
 export const projectMarketRace = ({
   currentPortfolio,
   portfolioReturnRate,
   annualContribution,
   targetHomePrice,
   housingAppreciationRate,
+  monthlyHousingBudget,
+  mortgageParams,
   years = 10,
 }) => {
   const r = portfolioReturnRate / 100
@@ -120,8 +141,8 @@ export const projectMarketRace = ({
         ? annualContribution * ((Math.pow(1 + r, year) - 1) / r)
         : annualContribution * year)
     const homePrice = targetHomePrice * Math.pow(1 + h, year)
-    const downPaymentNeeded = homePrice * 0.2
-    return { year, portfolio, homePrice, downPaymentNeeded, gap: downPaymentNeeded - portfolio }
+    const requiredDown = getRequiredDownPayment(homePrice, monthlyHousingBudget, mortgageParams)
+    return { year, portfolio, homePrice, requiredDown, gap: requiredDown - portfolio }
   })
 }
 
@@ -169,8 +190,9 @@ const getMaxHomePrice = ({
 export const calculateScenario = (annualIncome, inputs, annualPreTaxDeductions = 0) => {
   const isNet = inputs.incomeMode === 'net'
   const taxFactor = isNet ? 1 - Math.min(toNumber(inputs.effectiveTaxRate), 60) / 100 : 1
-  // 401k contributions are pre-tax: subtract after applying tax factor (conservative simplification)
-  const effectiveAnnualIncome = annualIncome * taxFactor - (isNet ? toNumber(annualPreTaxDeductions) : 0)
+  // 401k is pre-tax: deduct from income before applying tax rate
+  const taxableIncome = isNet ? annualIncome - toNumber(annualPreTaxDeductions) : annualIncome
+  const effectiveAnnualIncome = taxableIncome * taxFactor
   const creditBand =
     CREDIT_SCORE_OPTIONS.find((option) => option.value === inputs.creditBand) ||
     CREDIT_SCORE_OPTIONS[4]

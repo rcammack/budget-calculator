@@ -755,6 +755,12 @@ strong {
   color: var(--text-hint);
 }
 
+.panel-hint-note {
+  display: block;
+  margin-top: 0.25rem;
+  font-style: italic;
+}
+
 .spending-list {
   display: flex;
   flex-direction: column;
@@ -799,6 +805,21 @@ strong {
 
 .spending-remove:hover {
   opacity: 1;
+}
+
+.spending-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid var(--border-td);
+  padding-top: 0.4rem;
+  margin-top: 0.2rem;
+  font-size: 0.85rem;
+  color: var(--text-td);
+}
+
+.spending-total strong {
+  color: var(--text-strong);
 }
 
 .add-spending-btn {
