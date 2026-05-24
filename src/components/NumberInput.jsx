@@ -9,6 +9,7 @@ const NumberInput = ({ label, value, onChange, hint, tooltip, step = 'any' }) =>
         </span>
       )}
     </span>
+    {hint && <small>{hint}</small>}
     <input
       type="number"
       inputMode="decimal"
@@ -17,7 +18,6 @@ const NumberInput = ({ label, value, onChange, hint, tooltip, step = 'any' }) =>
       value={value}
       onChange={(event) => onChange(event.target.value)}
     />
-    {hint && <small>{hint}</small>}
   </label>
 )
 

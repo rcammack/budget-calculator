@@ -1,8 +1,6 @@
 import { currency, calculateDownPaymentStrategy } from '../calculations'
 
 const DownPaymentAdvice = ({ inputs, recommendedHomePrice, liquidSavings }) => {
-  if (liquidSavings <= 0 || recommendedHomePrice <= 0) return null
-
   const {
     twentyPctDown, excess, canCover20Pct,
     annualMortgageSaving, annualStockReturn, annualHysaReturn,

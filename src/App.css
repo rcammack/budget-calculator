@@ -29,14 +29,14 @@
 
 .app-header-top {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 1rem;
   flex-wrap: wrap;
 }
 
 .app-header h1 {
-  margin: 0.25rem 0 0.75rem;
+  margin: 0 0 0.75rem;
   font-size: clamp(1.5rem, 4vw, 2.1rem);
 }
 
@@ -56,25 +56,29 @@
 }
 
 /* ── Theme switcher ────────────────────────────────────────────── */
+.theme-switcher {
+  position: fixed;
+  top: 0.75rem;
+  right: 0.75rem;
+  z-index: 100;
+}
+
 .theme-switcher select {
-  background: var(--tbtn-active-bg);
-  color: var(--tbtn-active-color);
-  border: 1px solid var(--tbtn-active-border);
+  background: var(--bg-panel);
+  color: var(--text-body);
+  border: 1px solid var(--border-input);
   border-radius: var(--radius-input);
-  padding: 0.45rem 2rem 0.45rem 0.75rem;
-  font: inherit;
+  padding: 0.15rem 1.4rem 0.15rem 0.35rem;
   font-size: 1rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
+  line-height: 1;
   cursor: pointer;
-  width: auto;
   appearance: none;
   background-image: linear-gradient(45deg, transparent 50%, currentColor 50%),
     linear-gradient(135deg, currentColor 50%, transparent 50%);
   background-position:
-    calc(100% - 0.85rem) calc(50% - 1px),
-    calc(100% - 0.55rem) calc(50% - 1px);
-  background-size: 0.35rem 0.35rem, 0.35rem 0.35rem;
+    calc(100% - 0.55rem) calc(50% - 1px),
+    calc(100% - 0.3rem) calc(50% - 1px);
+  background-size: 0.3rem 0.3rem, 0.3rem 0.3rem;
   background-repeat: no-repeat;
 }
 
@@ -115,6 +119,13 @@
 .field-group {
   display: grid;
   gap: 0.35rem;
+  align-content: start;
+}
+
+@media (min-width: 700px) {
+  .three-col .field {
+    align-content: end;
+  }
 }
 
 .field span {
@@ -609,10 +620,10 @@ strong {
 
 @media (max-width: 600px) {
   .retirement-row {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
   }
-  .retirement-label { grid-column: 1 / -1; }
-  .retirement-match  { grid-column: 1 / -1; }
+  .retirement-label { grid-column: unset; }
+  .retirement-match  { grid-column: unset; }
 }
 
 .retirement-label {
@@ -620,6 +631,7 @@ strong {
   font-weight: 600;
   color: var(--text-label);
   white-space: nowrap;
+  align-self: start;
 }
 
 .retirement-match {

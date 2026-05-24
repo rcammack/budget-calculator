@@ -110,21 +110,14 @@ function App() {
 
   return (
     <main className="app-shell">
+      <label className="theme-switcher" aria-label="Color theme">
+        <select value={theme} onChange={(e) => setTheme(e.target.value)}>
+          <option value="light">☀️</option>
+          <option value="dark">🌙</option>
+          <option value="hc">◑</option>
+        </select>
+      </label>
       <header className="app-header">
-        <div className="app-header-top">
-          <p className="eyebrow">Honolulu, HI</p>
-          <label className="theme-switcher">
-            <select
-              value={theme}
-              onChange={(e) => setTheme(e.target.value)}
-              aria-label="Color theme"
-            >
-              <option value="light">Light</option>
-              <option value="dark">Dark</option>
-              <option value="hc">High Contrast</option>
-            </select>
-          </label>
-        </div>
         <h1>Home Affordability Calculator</h1>
         <p>
           Honolulu-focused affordability calculator. Affordability mode uses 25% of net
