@@ -6,7 +6,7 @@ export const MAX_401K_CONTRIBUTION = 23500  // 2025 IRS limit (under age 50)
 export const TAX_RATE_SINGLE  = 30  // Federal + Hawaii + FICA, single filer
 export const TAX_RATE_MARRIED = 28  // MFJ typically ~2% lower for unequal incomes
 
-export const DOWN_PAYMENT_OPTIONS = [3.5, 5, 10, 20]
+export const DOWN_PAYMENT_OPTIONS = [10, 20, 25, 30]
 
 export const CREDIT_SCORE_OPTIONS = [
   { value: 'lt580', label: '<580', factor: 0.78, recommendedDown: 10 },
@@ -32,6 +32,10 @@ export const DEFAULT_SPENDING_ITEMS = [
   { id: '1', name: 'Rent', amount: 1500, frequency: 'monthly' },
   { id: '2', name: 'Groceries', amount: 600, frequency: 'monthly' },
   { id: '3', name: 'Utilities', amount: 200, frequency: 'monthly' },
+  { id: '4', name: 'Charity', amount: 10000, frequency: 'annual' },
+  { id: '5', name: 'Pet Insurance', amount: 700, frequency: 'annual' },
+  { id: '6', name: 'Bouldering Gym', amount: 1200, frequency: 'annual' },
+  { id: '7', name: 'Trips', amount: 8000, frequency: 'annual' },
 ]
 
 export const DEFAULT_INPUTS = {
